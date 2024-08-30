@@ -190,6 +190,5 @@ std::chrono::duration<double> duration = end - start;
 // Output the duration
 std::cout << "Total Time taken (again): " << duration.count() << " seconds" << std::endl;
 
-printf("%lld %lld\n", distances.Shape()[0], distances.Shape()[1]);
 return 0;
 }

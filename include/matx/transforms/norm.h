@@ -62,7 +62,6 @@ __MATX_INLINE__ void norm_impl(OutputOp out, const InputOp &in,
           NormOrder order, Executor &&exec)
 {
   MATX_NVTX_START("", matx::MATX_NVTX_LOG_API)
-
   if constexpr (std::is_same_v<NormType, detail::NormTypeVector>) {
     if (order == NormOrder::NONE || order == NormOrder::L2) {
       // This is really just:
