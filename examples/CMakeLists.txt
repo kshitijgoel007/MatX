@@ -16,6 +16,7 @@ set(examples
     spherical_harmonics
     svd_power
     repro
+    repro2
     qr
     black_scholes
     print_styles)

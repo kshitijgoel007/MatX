@@ -3,6 +3,15 @@
 #include <iostream>
 #include <cstdio>
 
+template <typename T>
+void printShape(const char* str, T op) {
+  printf("%s: \n", str);
+  printf("    Shape: \n");
+  for(int i = 0; i < T::Rank(); i++) {
+    printf("        dim: %d: size: %d\n", i, (int) op.Size(i));
+  }
+}
+
 auto createMockMnistDatasetMatX(int n = 70000, int d = 784) {
     auto mnist = matx::make_tensor<float>({n, d}, matx::MATX_DEVICE_MEMORY);
     auto mnist_16 = matx::make_tensor<matx::matxFp16>({n, d}, matx::MATX_DEVICE_MEMORY);
@@ -66,12 +75,18 @@ matx::tensor_t<matx::matxFp16, 2>  findDistancesMatX(matx::tensor_t<matx::matxFp
 
     auto AFlat_t = matx::flatten(A_t);
 
+    printShape("Aflat_t", AFlat_t);
+
     auto distances_t = matx::make_tensor<matx::matxFp16>({n, 2 * k * m}, matx::MATX_DEVICE_MEMORY);
 
     //int j = 0;
     std::vector<double> times;
 
     auto start_all = std::chrono::high_resolution_clock::now();
+ 
+    printShape("A", A_t);
+    printShape("B", B_t);
+    printShape("X", X_t);
 
     for (int i = 0; i < n; i += batchSize) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -81,23 +96,34 @@ matx::tensor_t<matx::matxFp16, 2>  findDistancesMatX(matx::tensor_t<matx::matxFp
         auto XSubset_t_op = matx::slice(X_t, {i, 0}, {maxBatchIdx + 1, matx::matxEnd});
 
         auto ABatchFlat_t_op = matx::slice(AFlat_t, {i * 2 * k}, {(maxBatchIdx + 1) * 2 * k});
+        printShape("ABatchFlat_t_op", ABatchFlat_t_op);
 
         auto BBatch_t_op = matx::remap<0>(B_t, ABatchFlat_t_op);
 
+        printShape("BBatch_t_op", BBatch_t_op);
+
+	printShape("BBatch_t_op_flat", matx::flatten(BBatch_t_op));
+
         auto XBatch_t_op = matx::remap<0>(X_t, matx::flatten(BBatch_t_op));
+        printShape("XBatch_t_op", XBatch_t_op);
 
         auto XBatchReshaped_t_op = matx::reshape(XBatch_t_op, {batchSize, 2 * k * m, d});
+        printShape("XBatchReshaped_t_op", XBatchReshaped_t_op);
 
         auto XSubsetReshaped_t_op = matx::reshape(XSubset_t_op, {batchSize, 1, d});
+        
+	printShape("XSubsetReshaped_t_op", XSubsetReshaped_t_op);
 
         auto YBatch_t_op = (XBatchReshaped_t_op - matx::repmat(XSubsetReshaped_t_op, {1, 2 * k * m,
                                                                                       1})); // Repmat is a workaround for minusing naively incompatibhle tensor shapes
+        
+	printShape("YBatch_t_op", YBatch_t_op);
 
-        auto YBatch_t_norm_op = matx::vector_norm(YBatch_t_op, {2}, matx::NormOrder::L2);
+        auto YBatch_t_norm_op = matx::vector_norm(YBatch_t_op, matx::NormOrder::L2);
 
         (matx::slice(distances_t, {i, 0}, {maxBatchIdx + 1, matx::matxEnd}) = YBatch_t_norm_op).run();
-
-        // Record end time
+        
+	// Record end time
         auto end = std::chrono::high_resolution_clock::now();
 
         // Calculate the duration
@@ -120,9 +146,11 @@ matx::tensor_t<matx::matxFp16, 2>  findDistancesMatX(matx::tensor_t<matx::matxFp
     // Output the duration
     std::cout << "Sync Time taken: " << duration_sync.count() << " seconds" << std::endl;
 
+#if 0
     for (const auto &element: times) {
         std::cout << element << std::endl;
     }
+#endif
 
     // Record end time
     auto end_all = std::chrono::high_resolution_clock::now();
