@@ -50,25 +50,15 @@
 namespace matx {
 
 
-template <class dataType>
-static __global__ void argminmaxCpy(
-                                   dataType* inputData, 
-                                   size_t*  minIdx, 
-                                   size_t*  maxIdx, 
-                                   dataType* minVal,
-                                   dataType* maxVal,
-                                   index_t*  minIdxFinal,                                    
-                                   index_t*  maxIdxFinal
-                                   )
+
+struct ZipMax
 {
-  if(threadIdx.x == 0 && blockIdx.x == 0 )
-  {
-    *maxVal      = inputData[*maxIdx];
-    *minVal      = inputData[*minIdx];
-    *maxIdxFinal = *maxIdx;
-    *minIdxFinal = *minIdx;
+  template <typename T>
+  __MATX_DEVICE__ __MATX_HOST__ __MATX_INLINE__ T operator()(const T &a, const T &b) const {
+    return thrust::get<1>(a) < thrust::get<1>(b) ? b : a;
   }
-}
+};
+
 
 auto constexpr INVALID = std::numeric_limits<size_t>::max();
 
@@ -232,7 +222,7 @@ public:
     }
     else if constexpr (op == CUB_OP_REDUCE_ARGMINMAX) {
       matxAlloc((void **)&d_minMax, sizeof(minmax), MATX_ASYNC_DEVICE_MEMORY,stream);
-      ExecArgMinMax(a, stream);
+      ExecArgMinMax(a, a_out, stream);
     }    
     else if constexpr (op == CUB_OP_SELECT) {
       ExecSelect(a_out, a, stream);
@@ -956,21 +946,113 @@ inline void ExecSort(OutputTensor &a_out,
    *   CUDA stream
    *
    */
-  inline void ExecArgMinMax(const InputOperator &in,
-                            const cudaStream_t stream)
+  inline void ExecArgMinMax(const InputOperator     &in,
+                            const OutputTensor      &out,
+                            const cudaStream_t       stream)
   {
 #ifdef __CUDACC__
     MATX_NVTX_START("", matx::MATX_NVTX_LOG_INTERNAL)
 
-    // Set up CUB stuff
-    auto d_in = thrust::counting_iterator<size_t>(0);
-    auto min_op = minmaxer{in.Data()};
-    auto init = minmax{INVALID};
+    auto zipped_input = thrust::make_zip_iterator(thrust::make_counting_iterator<matx::index_t>(0), in.Data());
+    auto zipped_output = thrust::make_zip_iterator(out.Data(), out.Data());
 
-    // Run reduction
+    auto initial_value = cuda::std::tuple<matx::index_t,int>(-1, std::numeric_limits<float>::min());
+
+    ZipMax cmp_op;
+
     cub::DeviceReduce::Reduce(
       d_temp, temp_storage_bytes,
-      d_in, d_minMax, in.TotalSize(), min_op, init, stream);
+      zipped_input, 
+      zipped_output, in.TotalSize(), cmp_op, initial_value, stream);
+    
+    // Determine temporary device storage requirements
+    // size_t temp_storage_bytes = 0;
+    // cub::DeviceSegmentedReduce::Reduce(
+    //   nullptr,
+    //   temp_storage_bytes,
+    //   zipped_input,
+    //   zipped_output,
+    //   N,
+    //   t_offsets.Data(),
+    //   t_offsets.Data() + 1,
+    //   cmp_op,
+    //   initial_value,
+    //   exec);
+
+    // auto t_temp_storage = matx::make_tensor<uint8_t>({static_cast<matx::index_t>(temp_storage_bytes)});
+
+
+    
+    // Run reduction
+    // cub::DeviceSegmentedReduce::Reduce(
+    //   t_temp_storage.Data(),
+    //   temp_storage_bytes,
+    //   zipped_input,
+    //   zipped_output,
+    //   N,
+    //   t_offsets.Data(),
+    //   t_offsets.Data() + 1,
+    //   cmp_op,
+    //   initial_value,
+    //   exec);
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Set up CUB stuff
+    // auto d_in = thrust::counting_iterator<size_t>(0);
+    // auto d_in = matx::make_tensor<index_t>({1920*1080});
+    // auto d_in = linspace<0>({1920*1080}, (index_t)0, (index_t)1920*1080-1);
+    // auto min_op = minmaxer{in.Data()};
+    // auto init = minmax{INVALID};
+    
+    // typename detail::base_type_t<InputOperator> in_base = d_in;
+    // typename detail::base_type_t<OutputTensor> out_base = d_minMax;
+      
+    ///\todo TYLER_TODO: probably need a custom condition here and in_op setup above to structure output correctly
+    // if constexpr (OutputTensor::Rank() > 0) 
+    // {
+    //   auto ft = [&](auto &&in, auto &&out, auto &&begin, auto &&end) 
+    //   {
+    //     return cub::DeviceSegmentedReduce::Reduce(
+    //                                       d_temp, temp_storage_bytes, 
+    //                                       in, out, in.TotalSize(), begin, end, min_op,
+    //                                       init, stream
+    //                                       );      
+    //     auto rv = ReduceInput(ft, out_base, in_base);
+    //     MATX_ASSERT_STR_EXP(rv, cudaSuccess, matxCudaError, "Error in cub::DeviceSegmentedReduce::ArgMinMaxReduce"); 
+    //   };
+      // cub::DeviceSegmentedReduce::Reduce(
+      //                                   d_temp, temp_storage_bytes, in, out, 
+      //                                   static_cast<int>(TotalSize(out_base)), begin, end, cparams_.reduce_op,
+      //                                   cparams_.init, stream
+      //                                   );
+        // };
+      //   auto rv = ReduceInput(ft, out_base, in_base);
+      //   MATX_ASSERT_STR_EXP(rv, cudaSuccess, matxCudaError, "Error in cub::DeviceSegmentedReduce::Reduce");
+    // }
+    // else 
+    // {
+    //   auto ft = [&](auto &&in, auto &&out, [[maybe_unused]] auto &&unused1, [[maybe_unused]] auto &&unused2) {
+    //     return cub::DeviceReduce::Reduce(d_temp, temp_storage_bytes, in, out, static_cast<int>(in.TotalSize()), min_op,
+    //                                 init, stream);
+    //   };
+      
+    //   auto rv = ReduceInput(ft, d_minMax, d_in);
+    //   MATX_ASSERT_STR_EXP(rv, cudaSuccess, matxCudaError, "Error in cub::DeviceReduce::Reduce");      
+    // }   
+        // Run reduction
+    // cub::DeviceReduce::Reduce(
+    //   d_temp, temp_storage_bytes,
+    //   d_in, 
+    //   d_minMax, in.TotalSize(), min_op, init, stream);
+
+        // Run reduction
+    // cub::DeviceReduce::Reduce(
+    //   d_temp, temp_storage_bytes,
+    //   reinterpret_cast<detail::convert_matx_type_t<typename remove_cvref_t<InputOperator>::value_type> *>(d_in.Data()) , 
+    //   d_minMax, in.TotalSize(), min_op, init, stream);      
 
 #endif
   }
@@ -1180,7 +1262,6 @@ private:
   cudaStream_t stream_;
   CParams cparams_; ///< Parameters specific to the operation type
   T1 *d_temp = nullptr;
-  // int *d_histogram = nullptr; // Used for hist()
   size_t temp_storage_bytes = 0;
 };
 
@@ -1315,7 +1396,14 @@ void cub_reduce(OutputTensor &a_out, const InputOperator &a, typename InputOpera
  *   CUDA stream
  */
 template <typename OutType, typename TensorIndexType, typename InType>
-void cub_reduce_custom(OutType minDest, TensorIndexType &minIdxs, OutType maxDest, TensorIndexType &maxIdxs, const InType &in, const cudaStream_t stream = 0)
+void cub_reduce_argminmax(
+                         OutType minDest, 
+                         TensorIndexType &minIdxs, 
+                         OutType maxDest, 
+                         TensorIndexType &maxIdxs, 
+                         const InType &in, 
+                         const cudaStream_t stream = 0
+                         )
 {
 #ifdef __CUDACC__
   MATX_NVTX_START("", matx::MATX_NVTX_LOG_API)
@@ -1337,17 +1425,8 @@ void cub_reduce_custom(OutType minDest, TensorIndexType &minIdxs, OutType maxDes
               return std::make_shared<cache_val_type>(minDest, in, detail::EmptyParams_t{}, stream);
             },
             [&](std::shared_ptr<cache_val_type> ctype) {
-              ctype->ExecArgMinMax(in, stream);
-              // argminmaxCpy<<<1,32,0,stream>>>(
-              //                                in.Data(),
-              //                                &(ctype->d_minMax->argmin),
-              //                                &(ctype->d_minMax->argmax),
-              //                                minDest.Data(),
-              //                                maxDest.Data(),
-              //                                minIdxs.Data(),
-              //                                maxIdxs.Data()
-              //                                );   
-                                                          
+              ctype->ExecArgMinMax(in, maxDest, stream);
+              
               auto argmin = matx::make_tensor<size_t>(reinterpret_cast<size_t*>(ctype->d_minMax), {1} );
               auto argmax = matx::make_tensor<size_t>(reinterpret_cast<size_t*>(ctype->d_minMax) + 1, {1} );
 
@@ -1357,6 +1436,12 @@ void cub_reduce_custom(OutType minDest, TensorIndexType &minIdxs, OutType maxDes
                              minDest = matx::select(in, argmin),
                              maxDest = matx::select(in, argmax)
                              );
+            //  auto outputOp =( 
+            //                  matx::clone<1>(minIdxs, {matx::matxKeepDim}) = argmin,
+            //                  matx::clone<1>(maxIdxs, {matx::matxKeepDim}) = argmax,
+            //                  matx::clone<1>(minDest, {matx::matxKeepDim}) = matx::select(in, argmin),
+            //                  matx::clone<1>(maxDest, {matx::matxKeepDim}) = matx::select(in, argmax)
+            //                  );                             
 
               outputOp.run(stream);
 
@@ -1368,17 +1453,7 @@ void cub_reduce_custom(OutType minDest, TensorIndexType &minIdxs, OutType maxDes
 
   auto tmp = detail::matxCubPlan_t<OutType, InType, detail::CUB_OP_REDUCE_ARGMINMAX>{minDest, in, {}, stream};
 
-  tmp.ExecArgMinMax(in, stream);   
-
-  // argminmaxCpy<<<1,32,0,stream>>>(
-  //                                 in.Data(),
-  //                                 &(tmp->d_minMax->argmin),
-  //                                 &(tmp->d_minMax->argmax),
-  //                                 minDest.Data(),
-  //                                 maxDest.Data(),
-  //                                 minIdxs.Data(),
-  //                                 maxIdxs.Data()
-  //                                 );  
+  tmp.ExecArgMinMax(in, maxDest, stream);   
 
   auto argmin = matx::make_tensor<size_t>(reinterpret_cast<size_t*>(tmp->d_minMax), {1} );
   auto argmax = matx::make_tensor<size_t>(reinterpret_cast<size_t*>(tmp->d_minMax) + 1, {1} );
@@ -1389,6 +1464,13 @@ void cub_reduce_custom(OutType minDest, TensorIndexType &minIdxs, OutType maxDes
                  minDest = matx::select(in, argmin),
                  maxDest = matx::select(in, argmax)
                  );
+
+  //  auto outputOp =( 
+  //                  matx::clone<1>(minIdxs, {matx::matxKeepDim}) = argmin,
+  //                  matx::clone<1>(maxIdxs, {matx::matxKeepDim}) = argmax,
+  //                  matx::clone<1>(minDest, {matx::matxKeepDim}) = matx::select(in, argmin),
+  //                  matx::clone<1>(maxDest, {matx::matxKeepDim}) = matx::select(in, argmax)
+  //                  );                    
 
   outputOp.run(stream);
 
