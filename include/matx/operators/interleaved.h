@@ -59,7 +59,7 @@ namespace matx
           static_assert(Rank() > 0);
         };
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ complex_type operator()(Is... indices) const 
         {
           auto real = op_(indices...);
@@ -72,8 +72,9 @@ namespace matx
           return complex_type{real, imag};
         }
 
-        template <typename... Is>
-        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ complex_type operator()(Is... indices) 
         {
           return std::as_const(*this).template operator()(indices...);
         }

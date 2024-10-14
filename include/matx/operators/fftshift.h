@@ -55,7 +55,7 @@ namespace matx
           static_assert(Rank() >= 1, "1D FFT shift must have a rank 1 operator or higher");
         };
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
         {
           auto tup = cuda::std::make_tuple(indices...);
@@ -63,8 +63,9 @@ namespace matx
           return cuda::std::apply(op_, tup);
         }
 
-        template <typename... Is>
-        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) 
         {
           return std::as_const(*this).template operator()(indices...);
         }

@@ -72,7 +72,7 @@ namespace matx
           ASSERT_COMPATIBLE_OP_SIZES(op_); 
         }
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
         {
           auto tup = cuda::std::make_tuple(indices...);
@@ -88,7 +88,7 @@ namespace matx
           return cuda::std::apply(op_, tup);
         }    
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
         {
           return std::as_const(*this).template operator()(indices...);
