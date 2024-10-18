@@ -1050,19 +1050,19 @@ IGNORE_WARNING_POP_GCC
         while (width > 1) {
 printf("ret width=%u size=%zu (Lsize() %% width)==0=%d (Stride(Rank() - 1) == 1)=%d  (sizeof(T) * width)<= MAX_VEC_WIDTH=%d     (reinterpret_cast<uintptr_t>(ldata_) %% (sizeof(T) * width))== 0  =%d\n", 
           width, sizeof(T), (Lsize() % width)==0, (Stride(Rank() - 1) == 1), (sizeof(T) * width)<= MAX_VEC_WIDTH, (reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width))== 0);          
-          if (((Lsize() % width) == 0) &&
-            (Stride(Rank() - 1) == 1) &&
-            ((sizeof(T) * width) <= MAX_VEC_WIDTH) &&
-            (reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width)) == 0) {
-
-            if constexpr (Rank() > 1) {
-              if (((Stride(Rank() - 2) % width) == 0)) {
-                break;
-              }
-            }
-            else {
-              break;
-            }
+          if (((Lsize() % width) == 0) &&                                       // Last dim is a multiple of vector load size
+            (Stride(Rank() - 1) == 1) &&                                        // Stride between elements in last dim is 1
+            ((sizeof(T) * width) <= MAX_VEC_WIDTH) &&                           // Hardware will let us load this width at once
+            (reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width)) == 0) { // Pointer is aligned to data size
+break;
+            // if constexpr (Rank() > 1) {
+            //   if (((Stride(Rank() - 2) % width) == 0)) {
+            //     break;
+            //   }
+            // }
+            // else {
+            //   break;
+            // }
           }
 
           width /= 2;

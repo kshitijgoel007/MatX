@@ -190,7 +190,7 @@ public:
 
 
   VecWidth GetMaxWidth() const {
-    return MinCompatibleWidth(out_, op_);
+    return MaxCompatibleWidth(out_, op_);
   }  
 
   /**

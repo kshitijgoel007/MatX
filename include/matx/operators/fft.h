@@ -63,8 +63,8 @@ namespace matx
       public:
         using matxop = bool;
         using value_type = std::conditional_t<is_complex_v<typename OpA::value_type>,
-          typename OpA::value_type,
-          typename scalar_to_complex<typename OpA::value_type>::ctype>;
+        typename OpA::value_type,
+        typename scalar_to_complex<typename OpA::value_type>::ctype>;
         using matx_transform_op = bool;
         using fft_xform_op = bool;
 

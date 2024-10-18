@@ -64,7 +64,7 @@ namespace matx
           ASSERT_COMPATIBLE_OP_SIZES(r);
         }
 
-        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        template <typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
         {
           [[maybe_unused]] auto theta = get_value(theta_, indices...);
@@ -123,7 +123,7 @@ namespace matx
 					index_t size2 = get_expanded_size<Rank()>(phi_, dim);
 					index_t size3 = get_expanded_size<Rank()>(r_, dim);
 					return detail::matx_max(size1, size2, size3);  
-        }
+        }      
     };
   }
   /**

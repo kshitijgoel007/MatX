@@ -174,14 +174,64 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
 
 //   std::cout << "Verification successful" << std::endl;
 
-  {
-    auto a = make_tensor<cuda::std::complex<float>>({1000000});
-    auto b = make_tensor<cuda::std::complex<float>>({1000000});
-    auto c = make_tensor<cuda::std::complex<float>>({1000000});
-    (c = (complex)0).run();
-    (c = fft(a)).run();
-    cudaDeviceSynchronize();
-  }
+  // {
+  //   auto a = make_tensor<cuda::std::complex<float>>({1000000});
+  //   auto b = make_tensor<cuda::std::complex<float>>({1000000});
+  //   auto c = make_tensor<cuda::std::complex<float>>({1000000});
+  //   (c = (complex)0).run();
+  //   (c = fft(a)).run();
+  //   cudaDeviceSynchronize();
+  // }
+
+//   {
+//     int M = 2;
+//   int I = 4;
+//   int J = 4;
+//   int K = 14;
+//   int L = 133;
+  
+// auto idx = matx::make_tensor<int, 1>({M});    
+//   idx(0) = 1;
+//   idx(1) = 3;
+
+//   auto A = matx::make_tensor<complex, 4>({I, J, K, L});
+//   auto B = matx::make_tensor<complex, 2>({I * M * K, L});
+
+//   auto index = [&] (int i, int j, int k, int l) {
+//     return i * J * K * L +
+//       j * K * L +
+//       k * L +
+//       l;
+//   };
+//   for (int i = 0; i < I ; i++) {
+//     for (int j = 0; j < J ; j++) {
+//       for (int k = 0; k < K ; k++) {
+//         for (int l = 0; l < L ; l++) {
+//           float val = (float)index(i,j,k,l);
+//           A(i,j,k,l) = complex(val, val/100);
+//         }
+//       }
+//     }
+//   }
+
+//   (B = (complex)0).run();  
+//   auto rop = remap<1>(A, idx);
+//   auto lop = lcollapse<3>(rop);  
+//   (B = lop).run();
+
+//   complex lop_val = lop(0, 0);
+//   //printf("%f\n", lop_val.real());
+//   print(B);
+//   }
+
+{
+  auto a = make_tensor<float>({1000,10, 10});
+  
+  auto b = make_tensor<float>({10000, 10});
+  auto c = lcollapse<2>(a);
+  printf("%lld %lld\n", c.Size(0), c.Size(1));
+  (b = c).run();
+}
 
   CUDA_CHECK_LAST_ERROR();
   MATX_EXIT_HANDLER();

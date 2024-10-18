@@ -152,14 +152,38 @@ namespace matx
         {
         }
 
-        template <detail::VecWidth InWidth, detail::VecWidth OutWidth, typename Idx>
-        __MATX_INLINE__ auto ApplyVec(const Idx &idx) {
-          auto apply_op = [this](auto... args) {
-              return static_cast<T *>(this)->template operator()<InWidth, OutWidth>(args...);
-          };
+        // template <detail::VecWidth InWidth, detail::VecWidth OutWidth, typename Idx>
+        // __MATX_INLINE__ auto ApplyVec(const Idx &idx) const {
+        //   auto apply_op = [this](auto... args) {
+        //       return static_cast<T *>(this)->template operator()<InWidth, OutWidth>(args...);
+        //   };
 
-          return cuda::std::apply(apply_op, idx);
-        }        
+        //   return cuda::std::apply(apply_op, idx);
+        // }      
+
+        __MATX_INLINE__ __MATX_HOST__ detail::VecWidth GetWidthFromSize() const {
+          int  max_vec =  static_cast<int>(detail::VecWidth::FOUR);
+
+          // Loop through testing each dimension to see if our vec size divides
+          // evenly into it. Do an early return if all 
+          for ( ; 
+                max_vec > static_cast<int>(detail::VecWidth::ONE); 
+                max_vec--) {
+            for (int r = 0; r < T::Rank(); r++) {
+              if ((static_cast<const T*>(this)->Size(r) % max_vec) == 0) {
+                if (r == T::Rank() - 1) {
+                  printf("HERE returning %d\n", max_vec);
+                  return static_cast<detail::VecWidth>(max_vec);
+                }
+              }
+              else {
+                break;
+              }
+            }
+          }
+printf("HERE2 returning %d\n", max_vec);
+          return static_cast<detail::VecWidth>(max_vec);
+        }
 
         __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto Shape() const {
           if constexpr (T::Rank() == 0) {

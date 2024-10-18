@@ -111,14 +111,14 @@ namespace matx
 
             // Arbitrary number that's roughly close to the number of cores on a standard GPU. This will prevent launching a
             // vector kernel when the amount of work is very small.
-            if (TotalSize(op) < 1024) {
-              width = detail::VecWidth::ONE;
-            }
+            // if (TotalSize(op) < 1024) {
+            //   width = detail::VecWidth::ONE;
+            // }
 
             const auto ilp  = static_cast<uint8_t>(width);
             bool stride = detail::get_grid_dims<Op::Rank()>(blocks, threads, sizes, ilp, 256);
 
-printf("%d %d %d %d %d width=%d\n", blocks.x, blocks.y, threads.x, threads.y, ilp, (int)width);
+printf("bx=%d by=%d bz=%d tx=%d ty=%d tz=%d ilp=%d width=%d\n", blocks.x, blocks.y, blocks.z, threads.x, threads.y, threads.z, ilp, (int)width);
 
             if constexpr (Op::Rank() == 1) {
               switch (width) {
@@ -137,10 +137,36 @@ printf("%d %d %d %d %d width=%d\n", blocks.x, blocks.y, threads.x, threads.y, il
               }
             }
             else if constexpr (Op::Rank() == 2) {
-              if(stride) {
-                detail::matxOpT2StrideKernel<detail::VecWidth::ONE, detail::VecWidth::ONE><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+              if (stride) {
+                switch (width) {
+                  case detail::VecWidth::ONE:
+                    detail::matxOpT2StrideKernel<detail::VecWidth::ONE, detail::VecWidth::ONE><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                    break;
+                  case detail::VecWidth::TWO:
+                    detail::matxOpT2StrideKernel<detail::VecWidth::TWO, detail::VecWidth::TWO><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                    break;
+                  case detail::VecWidth::FOUR:
+                    detail::matxOpT2StrideKernel<detail::VecWidth::FOUR, detail::VecWidth::FOUR><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                    break;
+                  default:
+                    MATX_ASSERT_STR(false, matxInvalidParameter, "Failed to get load/store width for kernel");
+                    break;
+                }                
               } else {
-                detail::matxOpT2Kernel<detail::VecWidth::ONE, detail::VecWidth::ONE><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                switch (width) {
+                  case detail::VecWidth::ONE:
+                    detail::matxOpT2Kernel<detail::VecWidth::ONE, detail::VecWidth::ONE><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                    break;
+                  case detail::VecWidth::TWO:
+                    detail::matxOpT2Kernel<detail::VecWidth::TWO, detail::VecWidth::TWO><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                    break;
+                  case detail::VecWidth::FOUR:
+                    detail::matxOpT2Kernel<detail::VecWidth::FOUR, detail::VecWidth::FOUR><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);
+                    break;
+                  default:
+                    MATX_ASSERT_STR(false, matxInvalidParameter, "Failed to get load/store width for kernel");
+                    break;
+                }
               }
             }
             else if constexpr (Op::Rank() == 3) {

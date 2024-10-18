@@ -167,12 +167,20 @@ namespace matx {
     }
 
     template <typename Op1, typename Op2>
-    __MATX_HOST__ __MATX_INLINE__ VecWidth MinCompatibleWidth(const Op1 &a, const Op2 &b) {
+    __MATX_HOST__ __MATX_INLINE__ VecWidth MaxCompatibleWidth(const Op1 &a, const Op2 &b) {
       VecWidth in1 = GetOpWidth(a);
       VecWidth in2 = GetOpWidth(b);
-printf("MinCompatibleWidth: %d %d\n", (int)in1, (int)in2);
+printf("MaxCompatibleWidth: %d %d\n", (int)in1, (int)in2);
       return static_cast<VecWidth>(cuda::std::min(static_cast<int>(in1), static_cast<int>(in2)));
     }
 
+    // template <typename Op, typename Idx>
+    // __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ decltype(auto) ApplyVec(const Op &op, const Idx &idx) {
+    //   auto apply_op = [&op](auto... args) {
+    //       return op.template operator()<VecWidth::ONE, VecWidth::ONE>(args...);
+    //   };
+
+    //   return cuda::std::apply(apply_op, idx);
+    // }
   }
 }; 

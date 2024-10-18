@@ -99,7 +99,7 @@ namespace matx
           static_assert(get_rank<T2>() <= 1, "legendre op:  m must be a scalar, rank 0 or 1 operator");
         }
 
-        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        template <typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ value_type operator()(Is... indices) const 
         {
           cuda::std::array<index_t, Rank()> inds{indices...};
@@ -197,7 +197,7 @@ namespace matx
               d--;
             return get_size(in_, d);
           }
-        }
+        }      
     };
   }
   

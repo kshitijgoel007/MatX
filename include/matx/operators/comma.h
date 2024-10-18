@@ -48,6 +48,7 @@ namespace matx
     template<class Op1, class Op2>
       class CommaOp : public BaseOp<CommaOp<Op1, Op2>>{
         public:
+
           __MATX_HOST__ __MATX_INLINE__  CommaOp(const Op1 &op1, const Op2 &op2) : op1_(op1), op2_(op2) {
             MATX_STATIC_ASSERT_STR(Op1::Rank() == Op2::Rank(), matxInvalidSize, 
                 "Chained expressions using the comma operator must match in rank");
@@ -60,11 +61,11 @@ namespace matx
 
 	        __MATX_INLINE__ std::string str() const { return op1_.str() + ", " + op2_.str(); }
 
-          template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+          template <typename... Is>
           auto __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ operator()(Is... indices) const {
             op1_(indices...);
             return op2_(indices...);
-          }                       
+          }
 
           static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank() noexcept
           {
@@ -98,7 +99,7 @@ namespace matx
             if constexpr (is_matx_op<Op2>()) {
               op2_.PostRun(std::forward<ShapeType>(shape), std::forward<Executor>(ex));
             }
-          }       
+          }        
                  
         private:
           typename detail::base_type_t<Op1> op1_;

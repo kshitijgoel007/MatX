@@ -62,10 +62,10 @@ inline bool get_grid_dims(dim3 &blocks, dim3 &threads, const cuda::std::array<in
   }
   else if constexpr (RANK == 2) {
     while (nt < max_cta_size) {
-      if (static_cast<index_t>(threads.x) < sizes[1]) {
+      if (static_cast<index_t>(threads.x) * ilp_factor < sizes[1]) {
         threads.x *= 2;
       }
-      else if (static_cast<index_t>(threads.y) < sizes[0]) {
+      else if (static_cast<index_t>(threads.y) * ilp_factor < sizes[0]) {
         threads.y *= 2;
       }
       nt *= 2;

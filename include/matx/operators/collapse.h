@@ -34,7 +34,6 @@
 
 
 #include "matx/core/type_utils.h"
-#include "matx/core/operator_utils.h"
 #include "matx/operators/base_operator.h"
 
 namespace matx
@@ -52,6 +51,7 @@ namespace matx
         using value_type = typename T1::value_type;
         using shape_type = index_t;
         using matxoplvalue = bool;
+        using matx_width = bool; ///< Signal we can do vector types from this operator
         using self_type = LCollapseOp<DIM, T1>;
 
         __MATX_INLINE__ std::string str() const { return "lcollapse<" + std::to_string(DIM) + ">(" + op_.str() + ")"; }
@@ -61,7 +61,7 @@ namespace matx
           static_assert(DIM > 1, "Must collapse multiple dims");
           static_assert(T1::Rank() >= 2, "Collapse must be called on operators with rank >= 2");
 
-          // comptue size of collapsed dimension
+          // compute size of collapsed dimension
           size_ = 1;
 
           // Collapse left-most dims
@@ -93,7 +93,11 @@ namespace matx
             ind /= op_.Size(d);
           }
 
-          return cuda::std::apply(op_, out);
+          auto apply_op = [this](auto... args) {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+          };
+          return cuda::std::apply(apply_op, out);
+          //return cuda::std::apply(op_, out);
         }
 
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
@@ -113,6 +117,14 @@ namespace matx
         {
           return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
         }                
+
+
+        VecWidth GetMaxWidth() const {
+          // Collapse is considered a no-op to vector operations, so we can pass the vector
+          // width from our inner operator directly through
+          return op_.GetMaxWidth();
+          //return MaxCompatibleWidth(this->GetWidthFromSize(), op_);
+        }
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {
