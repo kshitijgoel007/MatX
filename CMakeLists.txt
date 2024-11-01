@@ -21,6 +21,7 @@ else()
 endif()
 
 include(${rapids-cmake-dir}/cpm/cccl.cmake)
+include(${rapids-cmake-dir}/cpm/package_override.cmake)
 include(rapids-cmake)
 include(rapids-cpm)
 include(rapids-cuda)
