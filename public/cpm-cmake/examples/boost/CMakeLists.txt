@@ -11,9 +11,12 @@ target_compile_features(CPMExampleBoost PRIVATE cxx_std_17)
 
 include(../../cmake/CPM.cmake)
 
-# boost-cmake currently doesn't tag versions, so we use the according boost version
-CPMAddPackage("gh:Orphis/boost-cmake#7f97a08b64bd5d2e53e932ddf80c40544cf45edf@1.71.0")
+CPMAddPackage(
+  NAME Boost
+  VERSION 1.84.0
+  URL https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.xz
+  URL_HASH SHA256=2e64e5d79a738d0fa6fb546c6e5c2bd28f88d268a2a080546f74e5ff98f29d0e
+  OPTIONS "BOOST_ENABLE_CMAKE ON" "BOOST_INCLUDE_LIBRARIES container\\\;asio" # Note the escapes!
+)
 
-find_package(Threads REQUIRED)
-
-target_link_libraries(CPMExampleBoost PRIVATE Boost::system Threads::Threads)
+target_link_libraries(CPMExampleBoost PRIVATE Boost::asio Boost::container)

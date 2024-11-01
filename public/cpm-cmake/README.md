@@ -1,7 +1,3 @@
-[![Build Status](https://travis-ci.com/cpm-cmake/CPM.cmake.svg?branch=master)](https://travis-ci.com/cpm-cmake/CPM.cmake)
-[![Actions Status](https://github.com/cpm-cmake/CPM.cmake/workflows/MacOS/badge.svg)](https://github.com/cpm-cmake/CPM.cmake/actions)
-[![Actions Status](https://github.com/cpm-cmake/CPM.cmake/workflows/Windows/badge.svg)](https://github.com/cpm-cmake/CPM.cmake/actions)
-[![Actions Status](https://github.com/cpm-cmake/CPM.cmake/workflows/Ubuntu/badge.svg)](https://github.com/cpm-cmake/CPM.cmake/actions)
 
 <br />
 <p align="center">
@@ -11,12 +7,12 @@
 
 # Setup-free CMake dependency management
 
-CPM.cmake is a CMake script that adds dependency management capabilities to CMake.
+CPM.cmake is a cross-platform CMake script that adds dependency management capabilities to CMake.
 It's built as a thin wrapper around CMake's [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) module that adds version control, caching, a simple API [and more](#comparison-to-pure-fetchcontent--externalproject).
 
 ## Manage everything
 
-Any downloadable project or resource can be added as a version-controlled dependency though CPM, it is not necessary to modify or package anything.
+Any downloadable project or resource can be added as a version-controlled dependency through CPM, it is not necessary to modify or package anything.
 Projects using modern CMake are automatically configured and their targets can be used immediately.
 For everything else, the targets can be created manually after the dependency has been downloaded (see the [snippets](#snippets) below for examples).
 
@@ -24,6 +20,42 @@ For everything else, the targets can be created manually after the dependency ha
 
 - [CPM: An Awesome Dependency Manager for C++ with CMake](https://medium.com/swlh/cpm-an-awesome-dependency-manager-for-c-with-cmake-3c53f4376766)
 - [CMake and the Future of C++ Package Management](https://ibob.github.io/blog/2020/01/13/cmake-package-management/)
+
+## Full CMakeLists Example
+
+```cmake
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+
+# create project
+project(MyProject)
+
+# add executable
+add_executable(main main.cpp)
+
+# add dependencies
+include(cmake/CPM.cmake)
+
+CPMAddPackage("gh:fmtlib/fmt#7.1.3")
+CPMAddPackage("gh:nlohmann/json@3.10.5")
+CPMAddPackage("gh:catchorg/Catch2@3.4.0")
+
+# link dependencies
+target_link_libraries(main fmt::fmt nlohmann_json::nlohmann_json Catch2::Catch2WithMain)
+```
+
+See the [examples directory](https://github.com/cpm-cmake/CPM.cmake/tree/master/examples) for complete examples with source code and check [below](#snippets) or in the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/More-Snippets) for example snippets.
+
+## Adding CPM
+
+To add CPM to your current project, simply add the [latest release](https://github.com/cpm-cmake/CPM.cmake/releases/latest) of `CPM.cmake` or `get_cpm.cmake` to your project's `cmake` directory.
+The command below will perform this automatically.
+
+```bash
+mkdir -p cmake
+wget -O cmake/CPM.cmake https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/get_cpm.cmake
+```
+
+You can also download CPM.cmake directly from your project's `CMakeLists.txt`. See the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/Downloading-CPM.cmake-in-CMake) for more details.
 
 ## Usage
 
@@ -35,6 +67,7 @@ Afterwards, any targets defined in the dependency can be used directly.
 CPMAddPackage(
   NAME          # The unique name of the dependency (should be the exported target's name)
   VERSION       # The minimum version of the dependency (optional, defaults to 0)
+  PATCHES       # Patch files to be applied sequentially using patch and PATCH_OPTIONS (optional)
   OPTIONS       # Configuration options passed to the dependency (optional)
   DOWNLOAD_ONLY # If set, the project is downloaded, but not configured (optional)
   [...]         # Origin parameters forwarded to FetchContent_Declare, see below
@@ -46,7 +79,13 @@ If `GIT_TAG` hasn't been explicitly specified it defaults to `v(VERSION)`, a com
 On the other hand, if `VERSION` hasn't been explicitly specified, CPM can automatically identify the version from the git tag in some common cases.
 `GIT_TAG` can also be set to a specific commit or a branch name such as `master`, however this isn't recommended, as such packages will only be updated when the cache is cleared.
 
+`PATCHES` takes a list of patch files to apply sequentially. For a basic example, see [Highway](examples/highway/CMakeLists.txt).
+
 If an additional optional parameter `EXCLUDE_FROM_ALL` is set to a truthy value, then any targets defined inside the dependency won't be built by default. See the [CMake docs](https://cmake.org/cmake/help/latest/prop_tgt/EXCLUDE_FROM_ALL.html) for details.
+
+If an additional optional parameter `SYSTEM` is set to a truthy value, the SYSTEM directory property of the subdirectory added will be set to true.
+See the [add_subdirectory ](https://cmake.org/cmake/help/latest/command/add_subdirectory.html?highlight=add_subdirectory)
+and [SYSTEM](https://cmake.org/cmake/help/latest/prop_tgt/SYSTEM.html#prop_tgt:SYSTEM) target property for details.
 
 A single-argument compact syntax is also supported:
 
@@ -59,7 +98,7 @@ CPMAddPackage("uri#tag")
 CPMAddPackage("uri@version#tag")
 ```
 
-In the shorthand syntax if the URI is of the form `gh:user/name`, it is interpreted as GitHub URI and converted to `https://github.com/user/name.git`. If the URI is of the form `gl:user/name`, it is interpreted as a [GitLab](https://gitlab.com/explore/) URI and converted to `https://gitlab.com/user/name.git`. If the URI is of the form `bb:user/name`, it is interpreted as a [Bitbucket](https://bitbucket.org/) URI and converted to `https://bitbucket.org/user/name.git`. Otherwise the URI used verbatim as a git URL. All packages added using the shorthand syntax will be added using the [EXCLUDE_FROM_ALL](https://cmake.org/cmake/help/latest/prop_tgt/EXCLUDE_FROM_ALL.html) flag.
+In the shorthand syntax if the URI is of the form `gh:user/name`, it is interpreted as GitHub URI and converted to `https://github.com/user/name.git`. If the URI is of the form `gl:user/name`, it is interpreted as a [GitLab](https://gitlab.com/explore/) URI and converted to `https://gitlab.com/user/name.git`. If the URI is of the form `bb:user/name`, it is interpreted as a [Bitbucket](https://bitbucket.org/) URI and converted to `https://bitbucket.org/user/name.git`. Otherwise the URI used verbatim as a git URL. All packages added using the shorthand syntax will be added using the [EXCLUDE_FROM_ALL](https://cmake.org/cmake/help/latest/prop_tgt/EXCLUDE_FROM_ALL.html) and [SYSTEM](https://cmake.org/cmake/help/latest/prop_tgt/SYSTEM.html#prop_tgt:SYSTEM) flag.
 
 The single-argument syntax also works for URLs:
 
@@ -77,47 +116,15 @@ After calling `CPMAddPackage`, the following variables are defined in the local 
 - `<dependency>_SOURCE_DIR` is the path to the source of the dependency.
 - `<dependency>_BINARY_DIR` is the path to the build directory of the dependency.
 - `<dependency>_ADDED` is set to `YES` if the dependency has not been added before, otherwise it is set to `NO`.
+- `CPM_LAST_PACKAGE_NAME` is set to the determined name of the last added dependency (equivalent to `<dependency>`).
 
 For using CPM.cmake projects with external package managers, such as conan or vcpkg, setting the variable [`CPM_USE_LOCAL_PACKAGES`](#options) will make CPM.cmake try to add a package through `find_package` first, and add it from source if it doesn't succeed.
 
 In rare cases, this behaviour may be desirable by default. The function `CPMFindPackage` will try to find a local dependency via CMake's `find_package` and fallback to `CPMAddPackage`, if the dependency is not found.
 
-## Full CMakeLists Example
-
-```cmake
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
-
-# create project
-project(MyProject)
-
-# add executable
-add_executable(tests tests.cpp)
-
-# add dependencies
-include(cmake/CPM.cmake)
-CPMAddPackage("gh:catchorg/Catch2@2.5.0")
-
-# link dependencies
-target_link_libraries(tests Catch2)
-```
-
-See the [examples directory](https://github.com/cpm-cmake/CPM.cmake/tree/master/examples) for complete examples with source code and check [below](#snippets) or in the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/More-Snippets) for example snippets.
-
-## Adding CPM
-
-To add CPM to your current project, simply add the [latest release](https://github.com/cpm-cmake/CPM.cmake/releases/latest) of `CPM.cmake` or `get_cpm.cmake` to your project's `cmake` directory.
-The command below will perform this automatically.
-
-```bash
-mkdir -p cmake
-wget -O cmake/CPM.cmake https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/get_cpm.cmake
-```
-
-You can also download CPM.cmake directly from your project's `CMakeLists.txt`. See the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/Downloading-CPM.cmake-in-CMake) for more details.
-
 ## Updating CPM
 
-To update CPM to the newest version, update the script in the project's root directory, for example by running the command above.
+To update CPM to the newest version, update the script in the project's root directory, for example by running the same command as for [adding CPM](#adding-cpm).
 Dependencies using CPM will automatically use the updated script of the outermost project.
 
 ## Advantages
@@ -135,6 +142,10 @@ Dependencies using CPM will automatically use the updated script of the outermos
 - **No pre-built binaries** For every new build directory, all dependencies are initially downloaded and built from scratch. To avoid extra downloads it is recommend to set the [`CPM_SOURCE_CACHE`](#CPM_SOURCE_CACHE) environmental variable. Using a caching compiler such as [ccache](https://github.com/TheLartians/Ccache.cmake) can drastically reduce build time.
 - **Dependent on good CMakeLists** Many libraries do not have CMakeLists that work well for subprojects. Luckily this is slowly changing, however, until then, some manual configuration may be required (see the snippets [below](#snippets) for examples). For best practices on preparing projects for CPM, see the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/Preparing-projects-for-CPM.cmake).
 - **First version used** In diamond-shaped dependency graphs (e.g. `A` depends on `C`@1.1 and `B`, which itself depends on `C`@1.2 the first added dependency will be used (in this case `C`@1.1). In this case, B requires a newer version of `C` than `A`, so CPM will emit a warning. This can be easily resolved by adding a new version of the dependency in the outermost project, or by introducing a [package lock file](#package-lock).
+- **Some CMake policies set to `NEW`** Including CPM.cmake will lead to several CMake policies being set to `NEW`. Users which need the old behavior will need to manually modify their CMake code to ensure they're set to `OLD` at the appropriate places. The policies are:
+    - [CMP0077](https://cmake.org/cmake/help/latest/policy/CMP0077.html) and [CMP0126](https://cmake.org/cmake/help/latest/policy/CMP0126.html). They make setting package options from `CMPAddPackage` possible.
+    - [CMP0135](https://cmake.org/cmake/help/latest/policy/CMP0135.html) It allows for proper package rebuilds of packages which are archives, source cache is not used, and the package URL is changed to an older version.
+    - [CMP0150](https://cmake.org/cmake/help/latest/policy/CMP0150.html) Relative paths provided to `GIT_REPOSITORY` are treated as relative to the parent project's remote.
 
 For projects with more complex needs and where an extra setup step doesn't matter, it may be worth to check out an external C++ package manager such as [vcpkg](https://github.com/microsoft/vcpkg), [conan](https://conan.io) or [hunter](https://github.com/ruslo/hunter).
 Dependencies added with `CPMFindPackage` should work with external package managers.
@@ -182,19 +193,31 @@ Note that passing the variable as a configure option to CMake will always overri
 
 You can use `CPM_SOURCE_CACHE` on GitHub Actions workflows [cache](https://github.com/actions/cache) and combine it with ccache, to make your CI faster. See the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/Caching-with-CPM.cmake-and-ccache-on-GitHub-Actions) for more info.
 
+The directory where the version for a project is stored is by default the hash of the arguments to `CPMAddPackage()`.
+If for instance the patch command uses external files, the directory name can be set with the argument `CUSTOM_CACHE_KEY`.
+
 ### CPM_DOWNLOAD_ALL
 
 If set, CPM will forward all calls to `CPMFindPackage` as `CPMAddPackage`.
 This is useful to create reproducible builds or to determine if the source parameters have all been set correctly.
 This can also be set as an environmental variable.
+This can be controlled on a per package basis with the `CPM_DOWNLOAD_<dependency name>` variable.
 
 ### CPM_USE_LOCAL_PACKAGES
 
 CPM can be configured to use `find_package` to search for locally installed dependencies first by setting the CMake option `CPM_USE_LOCAL_PACKAGES`.
+
 If the option `CPM_LOCAL_PACKAGES_ONLY` is set, CPM will emit an error if the dependency is not found locally.
 These options can also be set as environmental variables.
 
 In the case that `find_package` requires additional arguments, the parameter `FIND_PACKAGE_ARGUMENTS` may be specified in the `CPMAddPackage` call. The value of this parameter will be forwarded to `find_package`.
+
+Note that this does not apply to dependencies that have been defined with a truthy `FORCE` parameter. These will be added as defined.
+
+### CPM_USE_NAMED_CACHE_DIRECTORIES
+
+If set, CPM use additional directory level in cache to improve readability of packages names in IDEs like CLion. It changes cache structure, so all dependencies are downloaded again. There is no problem to mix both structures in one cache directory but then there may be 2 copies of some dependencies.
+This can also be set as an environmental variable.
 
 ## Local package override
 
@@ -224,6 +247,22 @@ cmake --build build --target cpm-update-package-lock
 ```
 
 See the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/Package-lock) for more info.
+
+## Private repositories and CI
+
+When using CPM.cmake with private repositories, there may be a need to provide an [access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to be able to clone other projects. Instead of providing the token in CMake, we recommend to provide the regular URL and use [git-config](https://git-scm.com/docs/git-config) to rewrite the URLs to include the token.
+
+As an example, you could include one of the following in your CI script.
+
+```bash
+# Github
+git config --global url."https://${USERNAME}:${TOKEN}@github.com".insteadOf "https://github.com"
+```
+
+```bash
+# GitLab
+git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com".insteadOf "https://gitlab.com"
+```
 
 ## Built with CPM.cmake
 
@@ -257,6 +296,84 @@ If you know others, feel free to add them here through a PR.
       </a>
     </td>
   </tr>
+  <tr>
+    <td>
+      <a href="https://git.io/liblava">
+        <p align="center">
+          <img src="https://github.com/liblava.png" alt="liblava" width="100pt" />
+        </p>
+        <p align="center"><b>liblava - Modern Vulkan library</b></p>
+      </a>
+    </td>
+    <td>
+      <a href="https://github.com/variar/klogg">
+        <p align="center">
+          <img src="https://github.com/variar/klogg/blob/master/src/app/images/hicolor/scalable/klogg.svg" alt="klogg" width="100pt" />
+        </p>
+        <p align="center"><b>klogg - fast advanced log explorer</b></p>
+      </a>
+    </td>
+    <td>
+      <a href="https://github.com/MethanePowered/MethaneKit">
+        <p align="center">
+          <img src="https://github.com/MethanePowered/MethaneKit/raw/master/Docs/Images/Logo/MethaneLogoSmall.png" alt="MethaneKit" width="100pt" />
+        </p>
+        <p align="center"><b>Methane Kit - modern 3D graphics rendering framework</b></p>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://github.com/jhasse/jngl">
+        <p align="center">
+          <img src="https://github.com/jhasse/jngl/raw/master/doc/jngl-logo.svg" alt="JNGL" width="100pt" />
+        </p>
+        <p align="center"><b>JNGL - easy to use cross-platform 2D game library</b></p>
+      </a>
+    </td>
+    <td>
+      <a href="https://github.com/sillydan1/aaltitoad">
+        <p align="center">
+          <img src="https://github.com/sillydan1/aaltitoad/raw/v1.1.0/.github/resources/logo/toad_only.svg" alt="aaltitoad" width="100pt" />
+        </p>
+        <p align="center"><b>AALTITOAD - verifier and simulator for Tick Tock Automata</b></p>
+      </a>
+    </td>
+    <td>
+      <a href="https://github.com/ZIMO-Elektronik">
+        <p align="center">
+          <img src="https://avatars.githubusercontent.com/u/117935012?s=400&u=9a871a46dd13437f0adcae166e9efbe518ff0b99&v=4" alt="ZIMO-Elektronik" width="100pt" />
+        </p>
+        <p align="center"><b>ZIMO-Elektronik</b></p>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://github.com/ada-url/ada">
+        <p align="center">
+          <img src="https://avatars.githubusercontent.com/u/120840559?s=200&v=4" alt="ada" width="100pt" />
+        </p>
+        <p align="center"><b>ada - WHATWG-compliant and fast URL parser written in modern C++</b></p>
+      </a>
+    </td>
+    <td>
+      <a href="https://github.com/exaloop/codon">
+        <p align="center">
+          <img src="https://github.com/exaloop/codon/blob/develop/docs/img/logo.png?raw=true" alt="codon" width="100pt" />
+        </p>
+        <p align="center"><b>codon - A high-performance, zero-overhead, extensible Python compiler using LLVM</b></p>
+      </a>
+    </td>
+    <td>
+      <a href="https://github.com/RoaringBitmap/CRoaring">
+        <p align="center">
+          <img src="https://avatars.githubusercontent.com/u/16548876?s=200&v=4" alt="CRoaring" width="100pt" />
+        </p>
+        <p align="center"><b>CRoaring - Roaring bitmaps in C (and C++), with SIMD (AVX2, AVX-512 and NEON) optimizations: used by Apache Doris, ClickHouse, and StarRocks</b></p>
+      </a>
+    </td>
+  </tr>
 </table>
 
 ## Snippets
@@ -270,11 +387,10 @@ See the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/More-Snippets) for mo
 CPMAddPackage("gh:catchorg/Catch2@2.5.0")
 ```
 
-### [Boost (via boost-cmake)](https://github.com/Orphis/boost-cmake)
+### [Range-v3](https://github.com/ericniebler/range-v3)
 
-```CMake
-# boost-cmake currently doesn't tag versions, so we use the according boost version
-CPMAddPackage("gh:Orphis/boost-cmake#7f97a08b64bd5d2e53e932ddf80c40544cf45edf@1.71.0")
+```Cmake
+CPMAddPackage("gh:ericniebler/range-v3#0.12.0")
 ```
 
 ### [Yaml-cpp](https://github.com/jbeder/yaml-cpp)
@@ -284,22 +400,38 @@ CPMAddPackage("gh:Orphis/boost-cmake#7f97a08b64bd5d2e53e932ddf80c40544cf45edf@1.
 CPMAddPackage("gh:jbeder/yaml-cpp#yaml-cpp-0.6.3@0.6.3")
 ```
 
-### [Range-v3](https://github.com/ericniebler/range-v3)
-
-```Cmake
-CPMAddPackage("gh:ericniebler/range-v3#0.11.0")
-```
-
 ### [nlohmann/json](https://github.com/nlohmann/json)
 
 ```cmake
 CPMAddPackage(
   NAME nlohmann_json
   VERSION 3.9.1
-  OPTIONS 
+  GITHUB_REPOSITORY nlohmann/json
+  OPTIONS
     "JSON_BuildTests OFF"
 )
 ```
+
+### [Boost](https://github.com/boostorg/boost)
+
+Boost is a large project and will take a while to download. Using
+`CPM_SOURCE_CACHE` is strongly recommended. Cloning moves much more
+data than a source archive, so this sample will use a compressed
+source archive (tar.xz) release from Boost's github page.
+
+```CMake
+# boost is a huge project and directly downloading the 'alternate release'
+# from github is much faster than recursively cloning the repo.
+CPMAddPackage(
+  NAME Boost
+  VERSION 1.84.0
+  URL https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.xz
+  URL_HASH SHA256=2e64e5d79a738d0fa6fb546c6e5c2bd28f88d268a2a080546f74e5ff98f29d0e
+  OPTIONS "BOOST_ENABLE_CMAKE ON"
+)
+```
+
+For a working example of using CPM to download and configure the Boost C++ Libraries see [here](examples/boost).
 
 ### [cxxopts](https://github.com/jarro2783/cxxopts)
 
@@ -357,3 +489,85 @@ For a full example on using CPM to download and configure lua with sol2 see [her
 ### Full Examples
 
 See the [examples directory](https://github.com/cpm-cmake/CPM.cmake/tree/master/examples) for full examples with source code and check out the [wiki](https://github.com/cpm-cmake/CPM.cmake/wiki/More-Snippets) for many more example snippets.
+
+## Source Archives from GitHub
+
+Using a compressed source archive is usually much faster than a shallow
+clone. Optionally, you can verify the integrity using
+[SHA256](https://en.wikipedia.org/wiki/SHA-2) or similar. Setting the hash is useful to ensure a
+specific source is imported, especially since tags, branches, and
+archives can change.
+
+Let's look at adding [spdlog](https://github.com/gabime/spdlog) to a project:
+
+```cmake
+CPMAddPackage(
+  NAME     spdlog
+  URL      https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip
+  URL_HASH SHA256=6174bf8885287422a6c6a0312eb8a30e8d22bcfcee7c48a6d02d1835d7769232
+)
+```
+
+URL_HASH is optional, but it's a good idea for releases.
+
+
+### Identifying the URL
+
+Information for determining the URL is found
+[here](https://docs.github.com/en/repositories/working-with-files/using-files/downloading-source-code-archives#source-code-archive-urls).
+
+
+#### Release
+
+Not every software package provides releases, but for those that do,
+they can be found on the release page of the project. In a browser,
+the URL of the specific release is determined in a browser is
+determined by right clicking and selecting `Copy link address` (or
+similar) for the desired release. This is the value you will use in
+the URL section.
+
+This is the URL for spdlog release 1.13.0 in zip format:
+`https://github.com/gabime/spdlog/archive/refs/tags/v1.13.0.zip`
+
+
+#### Branch
+
+The URL for branches is non-obvious from a browser. But it's still fairly easy to figure it out. The format is as follows:
+
+`https://github.com/<user>/<name>/archive/refs/heads/<branch-name>.<archive-type>`
+
+Archive type can be one of `tar.gz` or `zip`.
+
+The URL for branch `v2.x` of spdlog is:
+`https://github.com/gabime/spdlog/archive/refs/heads/v2.x.tar.gz`
+
+
+#### Tag
+
+Tags are similar, but with this format:
+
+`https://github.com/<user>/<name>/archive/refs/tags/<tag-name>.<archive-type>`
+
+Tag `v1.8.5` of spdlog is this:
+
+`https://github.com/gabime/spdlog/archive/refs/tags/v1.8.5.tar.gz`
+
+Exactly like the release.
+
+
+#### Commit
+
+If a specific commit contains the code you need, it's defined as follows:
+
+`https://github.com/<user>/<name>/archive/<commit-hash>.<archive-type>`
+
+Example:
+`https://github.com/gabime/spdlog/archive/c1569a3d293a6b511ecb9c18b2298826c9578d9f.tar.gz`
+
+
+### Determining the Hash
+
+The following snippet illustrates determining the SHA256 hash on a linux machine using `wget` and `sha256sum`:
+```bash
+wget https://github.com/gabime/spdlog/archive/refs/tags/v1.13.0.zip -O - | sha256sum
+```
