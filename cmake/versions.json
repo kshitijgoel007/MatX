@@ -4,7 +4,7 @@
       "version": "2.7.0",
       "git_shallow": true,
       "git_url": "https://github.com/NVIDIA/cccl.git",
-      "git_tag": "264b587"
+      "git_tag": "020fda89801b4080ff8b837b196b1623bdc0feff"
     },
     "nvbench" : {
       "version" : "0.0",
