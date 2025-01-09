@@ -96,11 +96,11 @@ void compute_black_scholes_matx(tensor_t<T1,1>& K,
                                 cudaExecutor& exec)
 {
     auto VsqrtT = V * sqrt(T);
-    auto d1 = (log(S / K) + (r + 0.5 * V * V) * T) / VsqrtT ;
+    auto d1 = (log(S / K) + (r + static_cast<T1>(0.5) * V * V) * T) / VsqrtT ;
     auto d2 = d1 - VsqrtT;
     auto cdf_d1 = normcdf(d1);
     auto cdf_d2 = normcdf(d2);
-    auto expRT = exp(-1 * r * T); 
+    auto expRT = exp(static_cast<T1>(-1) * r * T); 
 
     (output = S * cdf_d1 - K * expRT * cdf_d2).run(exec);
 }
@@ -125,9 +125,23 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
   cudaStream_t stream;
   cudaStreamCreate(&stream);
   cudaExecutor exec{stream};
+// {
+//   auto a = make_tensor<double>({4, 8});
+//   auto b = make_tensor<double>({4, 8});
+//   a.SetVals({{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8}});
+//   b.SetVals({{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8}});
+//   print(a);
+//   print(b);
+//   auto c = make_tensor<double>({4,8});
+//   (c = b + a).run(exec);
+//     print(c);
+
+//     exit(0);
+// }
 
   compute_black_scholes_matx(K_tensor, S_tensor, V_tensor, r_tensor, T_tensor, output_tensor, exec);  
-
+printf("done with matx one %p %p %p %p\n", K_tensor.Data(), S_tensor.Data(), V_tensor.Data(), output_tensor.Data());
+cudaDeviceSynchronize();
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);

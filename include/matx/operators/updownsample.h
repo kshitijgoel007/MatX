@@ -68,7 +68,7 @@ namespace matx
         __MATX_INLINE__ UpsampleOp(const T &op, int32_t dim, index_t n) : op_(op), dim_(dim), n_(n) {
         };
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
         {
           static_assert(sizeof...(Is)==Rank());
@@ -78,11 +78,19 @@ namespace matx
           cuda::std::array<index_t, Rank()> ind{indices...};
           if ((ind[dim_] % n_) == 0) {
             ind[dim_] /= n_;
-            return cuda::std::apply(op_, ind);
+            return cuda::std::apply([&](auto &&...args)  {
+                return this->op_.template operator()<InWidth, OutWidth>(args...);
+              }, ind);
           }
 
           return static_cast<typename decltype(op_)::value_type>(0);
         }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
 
         constexpr __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ index_t Size(int32_t dim) const
         {

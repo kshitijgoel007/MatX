@@ -39,19 +39,9 @@
 
 namespace matx
 {
-  /**
-   * Conditionally execute an operator, otherwise execute a different operator
-   *
-   * Compares two operators or views and conditionally executes the second
-   * statement if the first is true, otherwise executes the third statement.
-   * Values from an operator are executed individually, and the only requirement
-   * for the conditional is the comparison operator must be defined for the
-   * particular type. For example, operator< on two integers is okay, but the same
-   * operator on two complex numbers will give a compiler error.
-   *
-   */
+  namespace detail {
   template <typename C1, typename T1, typename T2>
-    class IFELSE : public BaseOp<IFELSE<C1, T1, T2>>
+    class IfElseOp : public BaseOp<IfElseOp<C1, T1, T2>>
   {
     private:
       typename detail::base_type_t<C1> cond_;
@@ -73,7 +63,7 @@ namespace matx
        * @param op1 Operator if conditional branch is true
        * @param op2 Operator if conditional branch is false
        */
-      __MATX_INLINE__ IFELSE(const C1 &cond, const T1 &op1, const T2 &op2) : 
+      __MATX_INLINE__ IfElseOp(const C1 &cond, const T1 &op1, const T2 &op2) : 
                               cond_(cond), op1_(op1), op2_(op2)
       {
         static_assert((!is_tensor_view_v<T1> && !is_tensor_view_v<T2>),
@@ -116,7 +106,13 @@ namespace matx
         else {
           get_value(op2_, indices...);
         }
-      }      
+      }
+
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+      {
+        return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }            
 
       /**
        * @brief Rank of IF/ELSE operator
@@ -171,4 +167,21 @@ namespace matx
         return size_[dim];
       }
   };
+  };
+
+  /**
+   * Conditionally execute an operator, otherwise execute a different operator
+   *
+   * Compares two operators or views and conditionally executes the second
+   * statement if the first is true, otherwise executes the third statement.
+   * Values from an operator are executed individually, and the only requirement
+   * for the conditional is the comparison operator must be defined for the
+   * particular type. For example, operator< on two integers is okay, but the same
+   * operator on two complex numbers will give a compiler error.
+   *
+   */
+  template <typename C1, typename T1, typename T2>
+  __MATX_INLINE__ auto IFELSE(const C1 &cond, const T1 &op1, const T2 &op2) {
+    return detail::IfElseOp(cond, op1, op2);
+  }  
 } // end namespace matx

@@ -92,10 +92,20 @@ namespace matx
           return op_<InWidth, OutWidth>(i0*s_[0] + i1);
         }
 
-        template <detail::VecWidth InWidth, detail::VecWidth OutWidth>
+        template <VecWidth InWidth, VecWidth OutWidth>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(index_t i0, index_t i1)
         {
-          return op_<InWidth, OutWidth>(i0*s_[0] + i1);
+          return std::as_const(*this).template operator()<InWidth, OutWidth>(i0, i1);
+        }
+
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(index_t i0, index_t i1) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(i0, i1);
+        }
+
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(index_t i0, index_t i1)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(i0, i1);
         }
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()

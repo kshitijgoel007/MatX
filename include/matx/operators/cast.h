@@ -71,12 +71,6 @@ namespace matx
 	      __MATX_INLINE__ std::string str() const { return as_type_str<NewType>() + "(" + op_.str() + ")"; }
         __MATX_INLINE__ CastOp(const T &op) : op_(op){};  
 
-        template <typename... Is>
-        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
-        {
-          return static_cast<NewType>(op_.template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...));
-        }
-
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
         {
@@ -84,16 +78,22 @@ namespace matx
         }
 
         template <typename... Is>
-        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) 
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
         {
-          return static_cast<NewType>(op_.template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...));
-        }
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }         
 
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
         {
-          return static_cast<NewType>(op_.template operator()<InWidth, OutWidth>(indices...));
+          return std::as_const(*this).template operator()(indices...);
         }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }         
 
         template <typename ShapeType, typename Executor>
         __MATX_INLINE__ void PreRun(ShapeType &&shape, Executor &&ex) const noexcept

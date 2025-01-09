@@ -54,6 +54,11 @@ namespace matx
           return f_(pp_get<Dim>(indices...));
         }
 
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }            
+
         constexpr inline __MATX_HOST__ __MATX_DEVICE__ auto Size(int dim) const
         {
           return *(s_.begin() + dim);

@@ -88,17 +88,27 @@ namespace matx
 IGNORE_WARNING_PUSH_GCC("-Wmaybe-uninitialized")
               cuda::std::get<RANK - 2>(tup) = cuda::std::get<RANK - 2>(tup) - k_;
 IGNORE_WARNING_POP_GCC
-              return cuda::std::apply(op_, tup);
+              return cuda::std::apply([&](auto &&...args)  {
+                  return this->op_.template operator()<InWidth, OutWidth>(args...);
+                }, tup);
             }
             else {
               auto tup = cuda::std::make_tuple(indices..., static_cast<tt>(0));
 IGNORE_WARNING_PUSH_GCC("-Wmaybe-uninitialized")
               cuda::std::get<RANK - 1>(tup) = pp_get<RANK-2>(indices...) + k_;
 IGNORE_WARNING_POP_GCC
-              return cuda::std::apply(op_, tup);                
+              return cuda::std::apply([&](auto &&...args)  {
+                  return this->op_.template operator()<InWidth, OutWidth>(args...);
+                }, tup);            
             }
           }
         }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {

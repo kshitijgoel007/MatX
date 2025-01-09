@@ -93,6 +93,18 @@ struct remove_cvref {
 template <typename T>
 using remove_cvref_t = typename remove_cvref<T>::type;
 
+namespace detail {
+
+template <typename T, typename = void> struct is_vector : std::false_type {};
+template <typename T>
+struct is_vector<T, std::void_t<typename T::matx_vec>>
+    : std::true_type {
+};
+}
+
+template< class T >
+inline constexpr bool is_vector_v = detail::is_vector<typename remove_cvref<T>::type>::value;
+
 /**
  * @brief Determine if a type is a MatX half precision wrapper (either matxFp16 or matxBf16)
  * 

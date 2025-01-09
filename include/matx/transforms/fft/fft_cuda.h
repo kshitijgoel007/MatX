@@ -801,7 +801,6 @@ __MATX_INLINE__ void fft2_impl(OutputTensor o, const InputTensor i, FFTNorm norm
   auto in = detail::getCufft2DSupportedTensor(i, stream);
 
   if(!in.isSameView(i)) {
-    printf("fft copy\n");
     (in = i).run(stream);
   }
 

@@ -73,165 +73,147 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
 {
   MATX_ENTER_HANDLER();
   using complex = cuda::std::complex<float>;
-//   cudaExecutor exec{};
+  cudaExecutor exec{};
 
-//   index_t signal_size = 1ULL << 16;
-//   index_t filter_size = 16;
-//   index_t batches = 8;
-//   index_t filtered_size = signal_size + filter_size - 1;
-//   float separate_ms;
-//   float fused_ms;
-//   constexpr int iterations = 2;
-//   cudaStream_t stream;
-//   cudaStreamCreate(&stream);  
-//   cudaEvent_t start, stop;
-//   cudaEventCreate(&start);
-//   cudaEventCreate(&stop);  
+  index_t signal_size = 13;
+  index_t filter_size = 4;
+  index_t batches = 8;
+  index_t filtered_size = signal_size + filter_size - 1;
+  float separate_ms;
+  float fused_ms;
+  constexpr int iterations = 2;
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);  
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);  
 
-//   // Create time domain buffers
-//   auto sig_time  = make_tensor<complex>({batches, signal_size});
-//   auto filt_time = make_tensor<complex>({batches, filter_size});
-//   auto time_out  = make_tensor<complex>({batches, filtered_size});
+  // Create time domain buffers
+  auto sig_time  = make_tensor<complex>({batches, signal_size});
+  auto filt_time = make_tensor<complex>({batches, filter_size});
+  auto time_out  = make_tensor<complex>({batches, filtered_size});
 
-//   // Frequency domain buffers
-//   auto sig_freq  = make_tensor<complex>({batches, filtered_size});
-//   auto filt_freq = make_tensor<complex>({batches, filtered_size});
+  // Frequency domain buffers
+  auto sig_freq  = make_tensor<complex>({batches, filtered_size});
+  auto filt_freq = make_tensor<complex>({batches, filtered_size});
 
-//   for (index_t b = 0; b < batches; b++) {
-//     // Fill the time domain signals with data
-//     for (index_t i = 0; i < signal_size; i++) {
-//       sig_time(b,i) = {-1.0f * (2.0f * static_cast<float>(i % 2) + 1.0f) *
-//                             (static_cast<float>(i % 10) / 10.0f) +
-//                         0.1f,
-//                     -1.0f * (static_cast<float>(i % 2) == 0.0f) *
-//                             (static_cast<float>(i % 10) / 5.0f) -
-//                         0.1f};
-//     }
-//     for (index_t i = 0; i < filter_size; i++) {
-//       filt_time(b,i) = {static_cast<float>(i) / static_cast<float>(filter_size),
-//                       static_cast<float>(-i) / static_cast<float>(filter_size) +
-//                           0.5f};
-//     }
-//   }
+  for (index_t b = 0; b < batches; b++) {
+    // Fill the time domain signals with data
+    for (index_t i = 0; i < signal_size; i++) {
+      sig_time(b,i) = {-1.0f * (2.0f * static_cast<float>(i % 2) + 1.0f) *
+                            (static_cast<float>(i % 10) / 10.0f) +
+                        0.1f,
+                    -1.0f * (static_cast<float>(i % 2) == 0.0f) *
+                            (static_cast<float>(i % 10) / 5.0f) -
+                        0.1f};
+    }
+    for (index_t i = 0; i < filter_size; i++) {
+      filt_time(b,i) = {static_cast<float>(i) / static_cast<float>(filter_size),
+                      static_cast<float>(-i) / static_cast<float>(filter_size) +
+                          0.5f};
+    }
+  }
+  printf("INPUT\n");
+print(sig_time);
+print(filt_time);
 
-//   // Perform the FFT in-place on both signal and filter
-//   for (int i = 0; i < iterations; i++) {
-//     if (i == 1) {
-//       cudaEventRecord(start, stream);
-//     }    
-//     printf("first fft\n");
-//     (sig_freq = fft(sig_time, filtered_size)).run(exec);
-// printf("second fft\n");    
-//     (filt_freq = fft(filt_time, filtered_size)).run(exec);
+  // Perform the FFT in-place on both signal and filter
+  for (int i = 0; i < iterations; i++) {
+    if (i == 1) {
+      cudaEventRecord(start, stream);
+    }    
+    printf("first fft\n");
+    (sig_freq = fft(sig_time, filtered_size)).run(exec);
 
-//     printf("multiply\n");
-//     (sig_freq = sig_freq * filt_freq).run(exec);
-
-//     // IFFT in-place
-//     printf("ifft\n");
-//     (sig_freq = ifft(sig_freq)).run(exec);
+printf("second fft\n");    
+    (filt_freq = fft(filt_time, filtered_size)).run(exec);
     
-//   }
+    printf("TWO MULTIPLY INPUTS\n");
+ print(filt_freq);
+ print(sig_freq);
 
-//   cudaEventRecord(stop, stream);
-//   exec.sync();
-//   cudaEventElapsedTime(&separate_ms, start, stop);   
+    printf("multiply\n");
+    (sig_freq = sig_freq * filt_freq).run(exec);
+    print(sig_freq);
 
-//   // for (int i = 0; i < iterations; i++) {
-//   //   if (i == 1) {
-//   //     cudaEventRecord(start, stream);
-//   //   }
-//   //   (sig_freq = ifft(fft(sig_time, filtered_size) * fft(filt_time, filtered_size))).run(exec);
-//   // }
-  
-//   cudaEventRecord(stop, stream);
-//   exec.sync();
-//   cudaEventElapsedTime(&fused_ms, start, stop);  
+    // IFFT in-place
+    printf("ifft\n");
+    (sig_freq = ifft(sig_freq)).run(exec);
+    print(sig_freq);
+    
+  }
 
-//   printf("FFT runtimes for separate = %.2f ms, fused = %.2f ms\n", separate_ms/(iterations-1), fused_ms/(iterations-1));
+  printf("HEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEERE\n");
+  for (int m = 0; m < 10; m++) {
+      printf("%f %f\n", sig_freq(0, m).real(), sig_freq(0, m).imag());
+  }
 
-//   // Now the sig_freq view contains the full convolution result. Verify against
-//   // a direct convolution. The conv1d function only accepts a 1D filter, so we
-//   // create a sliced view here.
-//   // auto filt1 = slice<1>(filt_time, {0,0}, {matxDropDim, matxEnd});
-//   // (time_out = conv1d(sig_time, filt1, matxConvCorrMode_t::MATX_C_MODE_FULL)).run(exec);
+  for (int m = 0; m < 10; m++) {
+      printf("%f %f\n", sig_freq(1, m).real(), sig_freq(1, m).imag());
+  }  
+  // print(slice<1>(sig_freq, {0, 0}, {matxDropDim, 10}));
+  // print(slice<1>(sig_freq, {1, 0}, {matxDropDim, 10}));
 
-//   // exec.sync();
+  cudaEventRecord(stop, stream);
+  exec.sync();
+  cudaEventElapsedTime(&separate_ms, start, stop);   
+
+  for (int i = 0; i < iterations; i++) {
+    if (i == 1) {
+      cudaEventRecord(start, stream);
+    }
+    (sig_freq = ifft(fft(sig_time, filtered_size) * fft(filt_time, filtered_size))).run(exec);
+  }
+
+  cudaEventRecord(stop, stream);
+  exec.sync();
+  cudaEventElapsedTime(&fused_ms, start, stop);  
+
+  printf("FFT runtimes for separate = %.2f ms, fused = %.2f ms\n", separate_ms/(iterations-1), fused_ms/(iterations-1));
+
+  // Now the sig_freq view contains the full convolution result. Verify against
+  // a direct convolution. The conv1d function only accepts a 1D filter, so we
+  // create a sliced view here.
+  auto filt1 = slice<1>(filt_time, {0,0}, {matxDropDim, matxEnd});
+  (time_out = conv1d(sig_time, filt1, matxConvCorrMode_t::MATX_C_MODE_FULL)).run(exec);
+
+  exec.sync();
  
-//   // Compare signals
-//   for (index_t b = 0; b < batches; b++) {
-//     for (index_t i = 0; i < filtered_size; i++) {
-//       if (fabs(time_out(b,i).real() - sig_freq(b,i).real()) > 0.001 ||
-//           fabs(time_out(b,i).imag() - sig_freq(b,i).imag()) > 0.001) {
-//         std::cout <<
-//             "Verification failed at item " << i << ". Direct=" << time_out(b,i).real() << " " << time_out(b,i).imag() << ", FFT=" <<
-//             sig_freq(b,i).real() << " " <<
-//             sig_freq(b,i).imag() << "\n";
-//         return -1;
-//       }
-//     }
-//   }
+  // Compare signals
+  for (index_t b = 0; b < batches; b++) {
+    for (index_t i = 0; i < filtered_size; i++) {
+      if (fabs(time_out(b,i).real() - sig_freq(b,i).real()) > 0.001 ||
+          fabs(time_out(b,i).imag() - sig_freq(b,i).imag()) > 0.001) {
+        std::cout <<
+            "Verification failed at batch " << b << " item " << i << ". Direct=" << time_out(b,i).real() << " " << time_out(b,i).imag() << ", FFT=" <<
+            sig_freq(b,i).real() << " " <<
+            sig_freq(b,i).imag() << "\n";
+        return -1;
+      }
+    }
+  }
 
-//   std::cout << "Verification successful" << std::endl;
-
-  // {
-  //   auto a = make_tensor<cuda::std::complex<float>>({1000000});
-  //   auto b = make_tensor<cuda::std::complex<float>>({1000000});
-  //   auto c = make_tensor<cuda::std::complex<float>>({1000000});
-  //   (c = (complex)0).run();
-  //   (c = fft(a)).run();
-  //   cudaDeviceSynchronize();
-  // }
+  std::cout << "Verification successful" << std::endl;
 
 //   {
-//     int M = 2;
-//   int I = 4;
-//   int J = 4;
-//   int K = 14;
-//   int L = 133;
-  
-// auto idx = matx::make_tensor<int, 1>({M});    
-//   idx(0) = 1;
-//   idx(1) = 3;
-
-//   auto A = matx::make_tensor<complex, 4>({I, J, K, L});
-//   auto B = matx::make_tensor<complex, 2>({I * M * K, L});
-
-//   auto index = [&] (int i, int j, int k, int l) {
-//     return i * J * K * L +
-//       j * K * L +
-//       k * L +
-//       l;
-//   };
-//   for (int i = 0; i < I ; i++) {
-//     for (int j = 0; j < J ; j++) {
-//       for (int k = 0; k < K ; k++) {
-//         for (int l = 0; l < L ; l++) {
-//           float val = (float)index(i,j,k,l);
-//           A(i,j,k,l) = complex(val, val/100);
-//         }
-//       }
-//     }
+//     auto a = make_tensor<cuda::std::complex<float>>({1000000});
+//     auto b = make_tensor<cuda::std::complex<float>>({1000000});
+//     auto c = make_tensor<cuda::std::complex<float>>({1000000});
+//     (c = (complex)0).run();
+//     (c = fft(a)).run();
+//     cudaDeviceSynchronize();
 //   }
 
-//   (B = (complex)0).run();  
-//   auto rop = remap<1>(A, idx);
-//   auto lop = lcollapse<3>(rop);  
-//   (B = lop).run();
 
-//   complex lop_val = lop(0, 0);
-//   //printf("%f\n", lop_val.real());
-//   print(B);
-//   }
-
-{
-  auto a = make_tensor<float>({1000,10, 10});
+// {
+//   auto a = make_tensor<complex>({1000,10, 10});
+//   (a = ones<complex>()).run();
   
-  auto b = make_tensor<float>({10000, 10});
-  auto c = lcollapse<2>(a);
-  printf("%lld %lld\n", c.Size(0), c.Size(1));
-  (b = c).run();
-}
+//   auto b = make_tensor<complex>({1000,10, 10});
+//   (b = r2c(a, 0)).run();
+// }
+
+
 
   CUDA_CHECK_LAST_ERROR();
   MATX_EXIT_HANDLER();

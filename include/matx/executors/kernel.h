@@ -68,6 +68,8 @@ __global__ void matxOpT1Kernel(Op op, index_t size0) {
     }
     else {
       if constexpr (has_matx_width<Op>()) {
+        // const auto &tmp = op.template operator()<InWidth, OutWidth>(idx);
+        // printf("%lld %p\n", idx, &tmp);// &op.template operator()<InWidth, OutWidth>(idx));
         op.template operator()<InWidth, OutWidth>(idx);
       }
       else {
@@ -83,7 +85,7 @@ __global__ void matxOpT2Kernel(Op op, index_t size0, index_t size1) {
   index_t idx = static_cast<index_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   index_t idy = static_cast<index_t>(blockIdx.y) * blockDim.y + threadIdx.y;
   constexpr index_t w_indx = static_cast<index_t>(InWidth);
-  if ((idx * w_indx) < size1 && (idy * w_indx) < size0) {
+  if ((idx * w_indx) < size1 && (idy < size0)) {
     if constexpr (std::is_pointer_v<Op>) {
       if constexpr (has_matx_width<Op>()) {
         (*op).template operator()<InWidth, OutWidth>(idy, idx);

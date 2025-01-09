@@ -64,9 +64,14 @@ namespace matx
             // get index for the axis
             auto ind = inds[AXIS];
             // look up value for the axis
-            auto val = get_value(t1_, ind);
+            auto val = get_value<InWidth, OutWidth>(t1_, ind);
             return val;
           }
+
+          template <typename... Is>
+          __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const {
+            return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+          }          
 
           __MATX_INLINE__  __MATX_HOST__ __MATX_DEVICE__ index_t Size(int dim) const {
             return shape_[dim];
@@ -91,7 +96,7 @@ namespace matx
           static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank() { return RANK; }
       };
 
-    template <typename... Ts, int... I>
+      template <typename... Ts, int... I>
       __MATX_INLINE__  auto meshgrid_impl(std::integer_sequence<int, I...>, Ts&... ts) {
         auto constexpr RANK = (int)sizeof...(Ts);
 

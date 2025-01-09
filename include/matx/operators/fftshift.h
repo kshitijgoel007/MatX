@@ -60,15 +60,28 @@ namespace matx
         {
           auto tup = cuda::std::make_tuple(indices...);
           cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1) + 1) / 2) % Size(Rank()-1);
-          return cuda::std::apply(op_, tup);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, tup);
         }
-
 
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) 
         {
           return std::as_const(*this).template operator()(indices...);
         }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }                
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {
@@ -132,14 +145,34 @@ namespace matx
           static_assert(Rank() >= 2, "2D FFT shift must have a rank 2 operator or higher");
         };
 
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
+        {
+          auto tup = cuda::std::make_tuple(indices...);
+          cuda::std::get<Rank()-2>(tup) = (cuda::std::get<Rank()-2>(tup) + (Size(Rank()-2) + 1) / 2) % Size(Rank()-2);
+          cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1) + 1) / 2) % Size(Rank()-1);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, tup);
+        }
+
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) 
+        {
+          return std::as_const(*this).template operator()(indices...);
+        }
+
         template <typename... Is>
-          __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
-          {
-            auto tup = cuda::std::make_tuple(indices...);
-            cuda::std::get<Rank()-2>(tup) = (cuda::std::get<Rank()-2>(tup) + (Size(Rank()-2) + 1) / 2) % Size(Rank()-2);
-            cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1) + 1) / 2) % Size(Rank()-1);
-            return cuda::std::apply(op_, tup);
-          }   
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {
@@ -203,13 +236,33 @@ namespace matx
           static_assert(Rank() >= 1, "1D IFFT shift must have a rank 1 operator or higher");
         };
 
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
+        {
+          auto tup = cuda::std::make_tuple(indices...);
+          cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1)) / 2) % Size(Rank()-1);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, tup);
+        }
+
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) 
+        {
+          return std::as_const(*this).template operator()(indices...);
+        }
+
         template <typename... Is>
-          __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
-          {
-            auto tup = cuda::std::make_tuple(indices...);
-            cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1)) / 2) % Size(Rank()-1);
-            return cuda::std::apply(op_, tup);
-          } 
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        } 
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {
@@ -273,14 +326,34 @@ namespace matx
           static_assert(Rank() >= 2, "2D IFFT shift must have a rank 2 operator or higher");
         };
 
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
+        {
+          auto tup = cuda::std::make_tuple(indices...);
+          cuda::std::get<Rank()-2>(tup) = (cuda::std::get<Rank()-2>(tup) + (Size(Rank()-2)) / 2) % Size(Rank()-2);
+          cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1)) / 2) % Size(Rank()-1);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, tup);
+        }
+
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) 
+        {
+          return std::as_const(*this).template operator()(indices...);
+        }
+
         template <typename... Is>
-          __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
-          {
-            auto tup = cuda::std::make_tuple(indices...);
-            cuda::std::get<Rank()-2>(tup) = (cuda::std::get<Rank()-2>(tup) + (Size(Rank()-2)) / 2) % Size(Rank()-2);
-            cuda::std::get<Rank()-1>(tup) = (cuda::std::get<Rank()-1>(tup) + (Size(Rank()-1)) / 2) % Size(Rank()-1);
-            return cuda::std::apply(op_, tup);
-          }   
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        } 
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {

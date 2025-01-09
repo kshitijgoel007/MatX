@@ -272,14 +272,21 @@ namespace matx
       else if constexpr (is_vector_v<T>) {
         return i;
       }
-      else if constexpr (std::is_arithmetic_v<T>) {
-        return detail::Vector<T, 1>{i};
-      }
+      // else if constexpr (std::is_arithmetic_v<T>) {
+      //   // If we're just fetching a constant return the width the fetcher is requesting
+      //   return detail::Vector<T, static_cast<size_t>(InWidth)>{static_cast<std::remove_cv_t<T>>(i)};
+      // }
       else {
         auto v = detail::Vector<T, static_cast<size_t>(InWidth)>{};
         v.Fill(static_cast<std::remove_cv_t<T>>(i));
         return v;
       }    
+    }
+
+    template <class T, typename... Is>
+    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto get_value(const T &i, Is... indices)
+    {
+      return get_value<VecWidth::SCALAR, VecWidth::SCALAR>(i, indices...);
     }
 
 

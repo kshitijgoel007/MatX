@@ -60,16 +60,22 @@ namespace matx
           MATX_STATIC_ASSERT_STR(Op::Rank() == 1, matxInvalidDim, "Input operator must be rank 1");
         };
 
+        template <VecWidth InWidth, VecWidth OutWidth>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ value_type operator()(index_t idx) const
         {
           // Horner's method for computing polynomial
           value_type ttl{coeffs_(0)};
           for(int i = 1; i < coeffs_.Size(0); i++) {
-              ttl = ttl * op_(idx) + coeffs_(i);
+              ttl = ttl * op_<InWidth, OutWidth>(idx) + coeffs_(i);
           }
 
           return ttl;
         }
+
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(index_t idx) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(idx);
+        }        
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {

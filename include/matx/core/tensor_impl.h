@@ -627,6 +627,7 @@ IGNORE_WARNING_POP_GCC
      *    A shape of the data with the appropriate strides set
      */
     __MATX_INLINE__ auto Strides() const noexcept { return this->desc_.Strides(); }
+    __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto Stride(int dim) const noexcept { return this->desc_.Stride(dim); }
 
     template <int N = RANK, typename StrideType>
     __MATX_INLINE__ auto SliceImpl([[maybe_unused]] const cuda::std::array<typename Desc::shape_type, RANK> &firsts,
@@ -871,7 +872,7 @@ IGNORE_WARNING_POP_GCC
     template <typename... Is>
     __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ T* GetPointer(Is... indices) const noexcept
     {
-      return ldata_ + GetValC<0, Is...>(cuda::std::make_tuple(indices...));
+      return ldata_ + GetValC<VecWidth::SCALAR, 0, Is...>(cuda::std::make_tuple(indices...));
     }
 
     /**
@@ -885,11 +886,16 @@ IGNORE_WARNING_POP_GCC
       return desc_.IsContiguous();
     }
 
-    template <int I = 0, typename ...Is>
+    template <VecWidth Width, int I = 0, typename ...Is>
     __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ stride_type GetVal([[maybe_unused]] cuda::std::tuple<Is...> tup)  {
       if constexpr (I < sizeof...(Is)) {
 IGNORE_WARNING_PUSH_GCC("-Wmaybe-uninitialized")
-        return GetVal<I+1, Is...>(tup) + cuda::std::get<I>(tup)*this->desc_.Stride(I);
+        if constexpr (Width != VecWidth::SCALAR && I == sizeof...(Is) - 1) {
+          return GetVal<Width, I+1, Is...>(tup) + cuda::std::get<I>(tup)*(this->desc_.Stride(I) * static_cast<index_t>(Width));
+        }
+        else {
+          return GetVal<Width, I+1, Is...>(tup) + cuda::std::get<I>(tup)*(this->desc_.Stride(I));
+        }
 IGNORE_WARNING_POP_GCC
       }
       else {
@@ -897,11 +903,16 @@ IGNORE_WARNING_POP_GCC
       }
     }
 
-    template <int I = 0, typename ...Is>
+    template <VecWidth Width, int I = 0, typename ...Is>
     __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ stride_type GetValC([[maybe_unused]] const cuda::std::tuple<Is...> tup) const {
       if constexpr (I < sizeof...(Is)) {
 IGNORE_WARNING_PUSH_GCC("-Wmaybe-uninitialized")
-        return GetValC<I+1, Is...>(tup) + cuda::std::get<I>(tup)*this->desc_.Stride(I);
+        if constexpr (Width != VecWidth::SCALAR && I == sizeof...(Is) - 1) {
+          return GetValC<Width, I+1, Is...>(tup) + cuda::std::get<I>(tup)*(this->desc_.Stride(I) * static_cast<index_t>(Width));
+        }
+        else {
+          return GetValC<Width, I+1, Is...>(tup) + cuda::std::get<I>(tup)*(this->desc_.Stride(I));
+        }
 IGNORE_WARNING_POP_GCC
       }
       else {
@@ -925,12 +936,23 @@ IGNORE_WARNING_POP_GCC
 #ifndef NDEBUG
       assert(ldata_ != nullptr);
 #endif
-      if constexpr (OutWidth != VecWidth::SCALAR) {
+      if constexpr (InWidth != VecWidth::SCALAR) {
         using vec_type = Vector<T, static_cast<size_t>(InWidth)>;
-        return *(reinterpret_cast<vec_type*>(ldata_) + GetValC<0, Is...>(cuda::std::make_tuple(indices...)));
+// cuda::std::array tmp{indices...};
+        
+//         if constexpr ((std::is_same_v<cuda::std::complex<float>, T> || std::is_same_v<cuda::std::complex<double>, T>) && InWidth == VecWidth::TWO) {
+//           const auto p = *reinterpret_cast<vec_type*>(ldata_ + GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
+//           printf("IN %lld %lld %lld  %p COMPLEX %f %f %f %f\n", tmp[0], tmp[1], GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)), ldata_ + GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)), p.data[0].real(), p.data[0].imag(), p.data[1].real(), p.data[1].imag());
+//         }
+//         else {
+//           printf("IN %lld %lld %lld  %p\n", tmp[0], tmp[1], GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)), ldata_ + GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
+//         }
+
+        //return *reinterpret_cast<vec_type*>(ldata_); 
+        return *reinterpret_cast<vec_type*>(ldata_ + GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
       }
       else {
-        return *(ldata_ + GetValC<0, Is...>(cuda::std::make_tuple(indices...)));
+        return *(ldata_ + GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
       }
     }
 
@@ -953,10 +975,13 @@ IGNORE_WARNING_POP_GCC
 #endif
       if constexpr (OutWidth != VecWidth::SCALAR) {
         using vec_type = Vector<T, static_cast<size_t>(InWidth)>;
-        return *(reinterpret_cast<vec_type*>(ldata_) + GetVal<0, Is...>(cuda::std::make_tuple(indices...)));
+        // cuda::std::array tmp{indices...};
+        // printf("OUT %lld %lld %lld  %p\n", tmp[0], tmp[1], GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)), ldata_ + GetValC<InWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
+//return *reinterpret_cast<vec_type*>(ldata_);
+        return *reinterpret_cast<vec_type*>(ldata_ +  GetVal<OutWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
       }
       else {
-        return *(ldata_ + GetVal<0, Is...>(cuda::std::make_tuple(indices...)));
+        return *(ldata_ + GetVal<OutWidth, 0, Is...>(cuda::std::make_tuple(indices...)));
       }
     }
 
@@ -1046,30 +1071,35 @@ IGNORE_WARNING_POP_GCC
     VecWidth GetMaxWidth() const {
       constexpr int MAX_VEC_WIDTH = 16; // 16B loads and stores
       //if (IsContiguous()) {
-        uint32_t width = 4;
-        while (width > 1) {
-printf("ret width=%u size=%zu (Lsize() %% width)==0=%d (Stride(Rank() - 1) == 1)=%d  (sizeof(T) * width)<= MAX_VEC_WIDTH=%d     (reinterpret_cast<uintptr_t>(ldata_) %% (sizeof(T) * width))== 0  =%d\n", 
-          width, sizeof(T), (Lsize() % width)==0, (Stride(Rank() - 1) == 1), (sizeof(T) * width)<= MAX_VEC_WIDTH, (reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width))== 0);          
-          if (((Lsize() % width) == 0) &&                                       // Last dim is a multiple of vector load size
-            (Stride(Rank() - 1) == 1) &&                                        // Stride between elements in last dim is 1
-            ((sizeof(T) * width) <= MAX_VEC_WIDTH) &&                           // Hardware will let us load this width at once
-            (reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width)) == 0) { // Pointer is aligned to data size
-break;
-            // if constexpr (Rank() > 1) {
-            //   if (((Stride(Rank() - 2) % width) == 0)) {
-            //     break;
-            //   }
-            // }
-            // else {
-            //   break;
-            // }
-          }
 
-          width /= 2;
-          
+      if (Stride(Rank() - 1) != 1) {
+        printf("STRIDE ONE\n");
+        return VecWidth::ONE;
+      }
+
+      uint32_t width = 4;
+      while (width > 1) {
+printf("ret width=%u size=%zu (Lsize() %% width)==0=%d (Stride(Rank() - 1) == 1)=%d  (sizeof(T) * width)<= MAX_VEC_WIDTH=%d     (reinterpret_cast<uintptr_t>(ldata_) %% (sizeof(T) * width))== 0  ->%d   stride check->%d\n", 
+        width, sizeof(T), (Lsize() % width)==0, (Stride(Rank() - 1) == 1), (sizeof(T) * width)<= MAX_VEC_WIDTH, (reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width))== 0, (int)(Rank() <= 1 || ((Stride(Rank() - 2) % width) == 0)));          
+        if (((Lsize() % width) == 0) &&                                       // Last dim is a multiple of vector load size
+          ((sizeof(T) * width) <= MAX_VEC_WIDTH) &&                           // Hardware will let us load this width at once
+          ((reinterpret_cast<uintptr_t>(ldata_) % (sizeof(T) * width)) == 0) &&
+          (Rank() <= 1 || ((Stride(Rank() - 2) % width) == 0))) { // Pointer is aligned to data size
+          break;
+          // if constexpr (Rank() > 1) {
+          //   if (((Stride(Rank() - 2) % width) == 0)) {
+          //     break;
+          //   }
+          // }
+          // else {
+          //   break;
+          // }
         }
 
-        return static_cast<VecWidth>(width);
+        width /= 2;
+      }
+
+      return static_cast<VecWidth>(width);
     }
 
     /**

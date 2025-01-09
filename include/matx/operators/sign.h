@@ -78,6 +78,12 @@ namespace matx
           }
         }
 
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
+
         template <typename ShapeType, typename Executor>
         __MATX_INLINE__ void PreRun(ShapeType &&shape, Executor &&ex) const noexcept
         {

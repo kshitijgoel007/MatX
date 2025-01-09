@@ -122,15 +122,6 @@ namespace matx
         }
       }
 
-      template <typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
-      __MATX_DEVICE__ __MATX_HOST__ __MATX_INLINE__ decltype(auto) operator()(Is... indices) const
-      {
-        auto i1 = get_value<VecWidth::SCALAR, VecWidth::SCALAR>(in1_, indices...);
-        auto i2 = get_value<VecWidth::SCALAR, VecWidth::SCALAR>(in2_, indices...);
-
-        return op_.template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(i1, i2);
-      }
-
       template <VecWidth InWidth, VecWidth OutWidth, typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
       __MATX_DEVICE__ __MATX_HOST__ __MATX_INLINE__ decltype(auto) operator()(Is... indices) const
       {
@@ -139,6 +130,12 @@ namespace matx
 
         return op_.template operator()<InWidth, OutWidth>(i1, i2);
       }
+
+      template <typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
+      __MATX_DEVICE__ __MATX_HOST__ __MATX_INLINE__ decltype(auto) operator()(Is... indices) const
+      {
+        return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }      
 
       template <typename ArrayType, std::enable_if_t<is_std_array_v<ArrayType>, bool> = true>
       __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ decltype(auto) operator()(const ArrayType &idx) const noexcept

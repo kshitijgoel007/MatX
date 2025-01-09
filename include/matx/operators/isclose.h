@@ -68,6 +68,12 @@ namespace matx
               static_cast<inner_type>(atol_) + static_cast<inner_type>(rtol_) * detail::_internal_abs(op2_(indices...)));
         }
 
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
+
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {
           return detail::matx_max(detail::get_rank<Op1>(), detail::get_rank<Op2>());

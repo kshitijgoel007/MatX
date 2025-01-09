@@ -52,6 +52,7 @@ namespace matx
 
         Range(T first, T step) : first_(first), step_(step) {}
 
+        template <VecWidth InWidth, VecWidth OutWidth>
         __MATX_DEVICE__ __MATX_HOST__ __MATX_INLINE__ T operator()(index_t idx) const
         {
           if constexpr (is_matx_half_v<T>) {
@@ -64,6 +65,11 @@ IGNORE_WARNING_PUSH_GCC("-Wmaybe-uninitialized")
             return first_ + T(static_cast<T>(idx) * step_);
 IGNORE_WARNING_POP_GCC
           }
+        }
+
+        __MATX_DEVICE__ __MATX_HOST__ __MATX_INLINE__ T operator()(index_t idx) const
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(idx);
         }
     };
   }

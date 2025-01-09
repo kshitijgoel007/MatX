@@ -82,14 +82,7 @@ namespace matx
 
     VecWidth GetMaxWidth() const {
       return GetOpWidth(in1_);
-    }
-
-    __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ decltype(auto) operator()(const cuda::std::array<index_t, detail::get_rank<I1>()> &idx) const noexcept
-    {
-      return cuda::std::apply([&](auto &&...args)  {
-          return this->operator()<VecWidth::SCALAR, VecWidth::SCALAR>(args...);
-        }, idx);
-    }    
+    }  
 
     template <VecWidth InWidth, VecWidth OutWidth>
     __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ decltype(auto) operator()(const cuda::std::array<index_t, detail::get_rank<I1>()> &idx) const noexcept
@@ -97,13 +90,11 @@ namespace matx
       return cuda::std::apply([&](auto &&...args)  {
           return this->operator()<InWidth, OutWidth>(args...);
         }, idx);      
-    }  
+    }
 
-    template <typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
-    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+    __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ decltype(auto) operator()(const cuda::std::array<index_t, detail::get_rank<I1>()> &idx) const noexcept
     {
-      auto i1 = get_value<VecWidth::SCALAR, VecWidth::SCALAR>(in1_, indices...);
-      return op_.template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(i1);
+      return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(idx);
     }
 
     template <VecWidth InWidth, VecWidth OutWidth, typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
@@ -112,6 +103,12 @@ namespace matx
       auto i1 = get_value<InWidth, OutWidth>(in1_, indices...);
       return op_.template operator()<InWidth, OutWidth>(i1);
     }
+
+    template <typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
+    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+    {
+      return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+    }    
 
     static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
     {
@@ -397,12 +394,12 @@ namespace matx
   DEFINE_UNARY_OP(log2, detail::Log2Op);
   DEFINE_UNARY_OP(log, detail::LogOp);
   DEFINE_UNARY_OP(loge, detail::LogOp);
-#if 0
+#if 1
   DEFINE_UNARY_OP(conj, detail::ConjOp);
 #else
   // implementing without a macro so we can optimize conj(real)
   template <typename I1,                        
-            typename = typename std::enable_if_t<is_matx_op<I1>()>> 
+            typename = typename std::enable_if_t<is_matx_op<I1>() || is_vector_v<I1>>> 
   [[nodiscard]] __MATX_INLINE__ auto conj(I1 i1) {
     using I1Type = extract_value_type_t<I1>;
     if constexpr (is_complex_v<I1Type>) {
@@ -434,23 +431,23 @@ namespace matx
   DEFINE_UNARY_OP(ceil, detail::CeilOp);
   DEFINE_UNARY_OP(round, detail::RoundOp);
   DEFINE_UNARY_OP(normcdf, detail::NormCdfOp);
-#if 0
+#if 1
   DEFINE_UNARY_OP(real, detail::RealOp);
 #else
-  // implementing without a macro so we can optimize away real on a real operator
-  template <typename I1,                        
-            typename = typename std::enable_if_t<is_matx_op<I1>()>> 
-  [[nodiscard]] __MATX_INLINE__ auto real(I1 i1) {
-    using I1Type = extract_value_type_t<I1>;
-    if constexpr (is_complex_v<I1Type>) {
-      using Op = detail::RealOp<I1Type>;
-      const typename detail::base_type_t<I1> &base = i1;
-      return detail::matxUnaryOp(base, Op());
-    } else {
-      // already real just return i1
-      return i1;
-    }
-  }
+  // // implementing without a macro so we can optimize away real on a real operator
+  // template <typename I1,                        
+  //           typename = typename std::enable_if_t<is_matx_op<I1>()>> 
+  // [[nodiscard]] __MATX_INLINE__ auto real(I1 i1) {
+  //   using I1Type = extract_value_type_t<I1>;
+  //   if constexpr (is_complex_v<I1Type>) {
+  //     using Op = detail::RealOp<I1Type>;
+  //     const typename detail::base_type_t<I1> &base = i1;
+  //     return detail::matxUnaryOp(base, Op());
+  //   } else {
+  //     // already real just return i1
+  //     return i1;
+  //   }
+  // }
 #endif
   DEFINE_UNARY_OP(imag, detail::ImagOp);  
   DEFINE_UNARY_OP(operator-, detail::SubNegOp );

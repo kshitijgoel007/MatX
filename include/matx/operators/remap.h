@@ -84,7 +84,9 @@ namespace matx
             ind[DIM] = idx_(ind[DIM]);
           }
           //return op_(ind);
-          return cuda::std::apply(op_, ind);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, ind);          
           //return this->ApplyVec<InWidth, OutWidth>(ind);
         }
 

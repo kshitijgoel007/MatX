@@ -57,7 +57,7 @@ namespace detail {
     FORWARD,
     BACKWARD
   };
-    
+
   template <typename OutputTensor, typename InputTensor, typename Executor>
   __MATX_INLINE__ auto  GetFFTInputView([[maybe_unused]] OutputTensor &o,
                       const InputTensor &i, uint64_t fft_size,
@@ -139,11 +139,28 @@ namespace detail {
           auto i_new = make_tensor<T2>(shape, MATX_ASYNC_DEVICE_MEMORY, stream);
           ends[RANK - 1] = i.Lsize();
           auto i_pad_part_v = slice(i_new, starts, ends);
-printf("fft copy\n");
+printf("fft copy %lld %lld\n", i_new.Size(0), i_new.Size(1));
           (i_new = static_cast<promote_half_t<T2>>(0)).run(stream);
-          printf("fft copy2\n");
           // example-begin copy-test-1
           matx::copy(i_pad_part_v, i, stream);
+//    cuda::std::complex<float> a[8*19];
+//    cudaMemcpy(&a, &i_new(0, 0), 8*19*8, cudaMemcpyDefault);
+//    printf("%p %p %p\n", i_new.Data(), &i_new(0, 0), &i_new(1, 0));
+// for (int d = 0; d < 8*19; d++)
+//                 printf("%d %f %f\n", d, a[d].real(), a[d].imag());
+
+
+//     cudaDeviceSynchronize();
+
+//           if constexpr (i_pad_part_v.Rank()==2)
+
+//  {        
+
+//   cuda::std::complex<float> a,b;
+//   cudaMemcpy(&a, i.Data(), 8, cudaMemcpyDefault);
+//   cudaMemcpy(&b, i.Data()+65551, 8,   cudaMemcpyDefault);
+//     printf("%f %f %f %f\n", a.real(), a.imag(),b.real(),b.imag());
+//  }
           // example-end copy-test-1
           return i_new;
         }

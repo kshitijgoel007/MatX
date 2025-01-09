@@ -52,8 +52,17 @@ namespace matx
       ConstVal(ShapeType &&s, T val) : s_(std::forward<ShapeType>(s)), v_(val){};
 
       template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
-      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ T operator()(Is...) const { 
-        return v_; };
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is...) const { 
+        auto v = detail::Vector<T, static_cast<size_t>(InWidth)>{};
+        v.Fill(static_cast<std::remove_cv_t<T>>(v_));
+        return v; 
+      }
+
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+      {
+        return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }      
 
       constexpr inline __MATX_HOST__ __MATX_DEVICE__ auto Size(int dim) const {
         if constexpr (!is_noshape_v<ShapeType>) {

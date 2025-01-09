@@ -77,6 +77,12 @@ namespace detail {
         return tmp_out_.template operator()<InWidth, OutWidth>(indices...);
       }
 
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+      {
+        return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }      
+
       template <typename Out, typename Executor>
       void Exec(Out &&out, Executor &&ex) const {
         static_assert(is_cuda_executor_v<Executor>, "filter() only supports the CUDA executor currently");   

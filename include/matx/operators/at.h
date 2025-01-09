@@ -55,11 +55,19 @@ namespace matx
         __MATX_INLINE__ std::string str() const { return "at()"; }
         __MATX_INLINE__ AtOp(const Op &op, Is... is) : op_(op), idx_{is...} {};
 
-        template <typename... Is2>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is2>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()([[maybe_unused]] Is2... indices) const
         {
-          return cuda::std::apply(op_, idx_);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, idx_);
         }
+
+        template <typename... Is2>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is2... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {

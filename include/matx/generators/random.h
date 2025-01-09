@@ -470,9 +470,15 @@ namespace detail {
         }
 #endif
 
-        return val;
+        auto vec_val = detail::Vector<T, static_cast<size_t>(InWidth)>{static_cast<std::remove_cv_t<T>>(val)};
+        return vec_val;
       }
 
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+      {
+        return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }         
 
       constexpr __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto Size(int dim) const
       {

@@ -45,6 +45,7 @@ inline bool get_grid_dims(dim3 &blocks, dim3 &threads, const cuda::std::array<in
   threads.x = 1;
   threads.y = 1;
   threads.z = 1;
+  
   // Dynamic logic to pick thread block size.
   // Fill in order x, y, z up to max_cta_size threads
   if constexpr (RANK == 1) {
@@ -62,17 +63,16 @@ inline bool get_grid_dims(dim3 &blocks, dim3 &threads, const cuda::std::array<in
   }
   else if constexpr (RANK == 2) {
     while (nt < max_cta_size) {
-      if (static_cast<index_t>(threads.x) * ilp_factor < sizes[1]) {
+      if ((static_cast<index_t>(threads.x) * ilp_factor) < sizes[1]) {
         threads.x *= 2;
       }
-      else if (static_cast<index_t>(threads.y) * ilp_factor < sizes[0]) {
-        threads.y *= 2;
-      }
+
       nt *= 2;
     }
     // launch as many blocks as necessary
-    blocks.x = static_cast<int>((sizes[1] + threads.x - 1) / threads.x);
-    blocks.y = static_cast<int>((sizes[0] + threads.y - 1) / threads.y);
+    int rnd_threads_x = ilp_factor * threads.x;
+    blocks.x = static_cast<int>((sizes[1] + rnd_threads_x - 1) / rnd_threads_x);
+    blocks.y = static_cast<int>(sizes[0]);
     blocks.z = 1; 
 
     if(blocks.y > 65535) {

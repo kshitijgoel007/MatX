@@ -55,7 +55,7 @@ namespace matx
         using matxop = bool;
         using value_type = typename T1::value_type;
 
-	__MATX_INLINE__ std::string str() const { return "hermitian(" + op_.str() + ")"; }
+	      __MATX_INLINE__ std::string str() const { return "hermitian(" + op_.str() + ")"; }
         __MATX_INLINE__ HermitianTransOp(const T1 &op) : op_(op) {
           static_assert(Rank() >= 2, "Hermitian operation needs input with rank >= 2");
         }
@@ -68,8 +68,16 @@ namespace matx
           auto stl = cuda::std::get<Rank()-2>(tup);
           cuda::std::get<Rank()-2>(tup) = cuda::std::get<Rank()-1>(tup);
           cuda::std::get<Rank()-1>(tup) = stl;      
-          return conj(cuda::std::apply(op_, tup));
+          return conj(cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, tup));
         }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {

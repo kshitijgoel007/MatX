@@ -349,7 +349,7 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto _internal_conj(T v1)
   }
   else {
     const auto UnFunc = [&](auto p1) {
-      return conj(p1);
+      return p1;
     };
 
     return UnaryVecFunc<InWidth>(UnFunc, v1);
@@ -641,6 +641,12 @@ template <typename T1, typename T2> struct MulF {
       return p1 * p2;
     };
 
+      // if constexpr (InWidth == matx::detail::VecWidth::TWO) {
+      //   if constexpr ((std::is_same_v<cuda::std::complex<float>, typename T1V::type> || std::is_same_v<cuda::std::complex<double>, typename T1V::type>) && std::is_same_v<float, typename T2V::type>) 
+      //   {
+      //     printf("   %d  %f %f %f %f  scalar=%f %f\n", (int)InWidth, v1.data[0].real(), v1.data[0].imag(), v1.data[1].real(), v1.data[1].imag(), v2.data[0], v2.data[1]);
+      //   }
+      // }
     return BinVecFunc<InWidth>(BinFunc, v1, v2);
   }
 };

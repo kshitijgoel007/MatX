@@ -64,12 +64,12 @@ namespace matx
           ASSERT_COMPATIBLE_OP_SIZES(r);
         }
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
         {
-          [[maybe_unused]] auto theta = get_value(theta_, indices...);
-          [[maybe_unused]] auto phi = get_value(phi_, indices...);
-          auto r = get_value(r_, indices...);
+          [[maybe_unused]] auto theta = get_value<InWidth, OutWidth>(theta_, indices...);
+          [[maybe_unused]] auto phi = get_value<InWidth, OutWidth>(phi_, indices...);
+          auto r = get_value<InWidth, OutWidth>(r_, indices...);
 
           if constexpr (WHICH==0) { // X
             return r * _internal_cos(phi) * _internal_cos(theta);
@@ -79,6 +79,12 @@ namespace matx
             return r * _internal_sin(phi);
           }
         }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is... indices) const 
+        {
+          return this->template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
 
         template <typename ShapeType, typename Executor>
         __MATX_INLINE__ void PreRun([[maybe_unused]] ShapeType &&shape, Executor &&ex) const noexcept

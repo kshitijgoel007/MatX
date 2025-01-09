@@ -112,6 +112,12 @@ namespace detail {
         }
       }
 
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+      {
+        return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }      
+
       static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
       {
         return OpA::Rank();

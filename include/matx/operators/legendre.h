@@ -99,7 +99,7 @@ namespace matx
           static_assert(get_rank<T2>() <= 1, "legendre op:  m must be a scalar, rank 0 or 1 operator");
         }
 
-        template <typename... Is>
+        template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ value_type operator()(Is... indices) const 
         {
           cuda::std::array<index_t, Rank()> inds{indices...};
@@ -110,11 +110,11 @@ namespace matx
           
           // compute n
           index_t nind = inds[axis1];
-          int n = get_value(n_, nind);
+          int n = get_value<InWidth, OutWidth>(n_, nind);
           
           // compute m 
           index_t mind = inds[axis2];
-          int m = get_value(m_, mind);
+          int m = get_value<InWidth, OutWidth>(m_, mind);
           
           if(axis1>axis2) 
             cuda::std::swap(axis1, axis2);
@@ -128,7 +128,9 @@ namespace matx
             }
           }
 
-          auto x = cuda::std::apply(in_, xinds);
+          auto x = cuda::std::apply([&](auto &&...args)  {
+              return this->in_.template operator()<InWidth, OutWidth>(args...);
+            }, xinds);          
 
           value_type ret;
 
@@ -142,7 +144,13 @@ namespace matx
           }
           
           return ret;
-        }    
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }        
 
         template <typename ShapeType, typename Executor>
         __MATX_INLINE__ void PreRun(ShapeType &&shape, Executor &&ex) const noexcept

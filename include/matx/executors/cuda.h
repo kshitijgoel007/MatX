@@ -117,8 +117,8 @@ namespace matx
 
             const auto ilp  = static_cast<uint8_t>(width);
             bool stride = detail::get_grid_dims<Op::Rank()>(blocks, threads, sizes, ilp, 256);
-
-printf("bx=%d by=%d bz=%d tx=%d ty=%d tz=%d ilp=%d width=%d\n", blocks.x, blocks.y, blocks.z, threads.x, threads.y, threads.z, ilp, (int)width);
+printf("%lld %lld\n", op.Size(0), op.Size(1));
+printf("bx=%d by=%d bz=%d tx=%d ty=%d tz=%d ilp=%d width=%d rank %d\n", blocks.x, blocks.y, blocks.z, threads.x, threads.y, threads.z, ilp, (int)width, Op::Rank());
 
             if constexpr (Op::Rank() == 1) {
               switch (width) {
@@ -153,6 +153,7 @@ printf("bx=%d by=%d bz=%d tx=%d ty=%d tz=%d ilp=%d width=%d\n", blocks.x, blocks
                     break;
                 }                
               } else {
+                printf("sizes %lld %lld\n", sizes[0], sizes[1]);
                 switch (width) {
                   case detail::VecWidth::ONE:
                     detail::matxOpT2Kernel<detail::VecWidth::ONE, detail::VecWidth::ONE><<<blocks, threads, 0, stream_>>>(op, sizes[0], sizes[1]);

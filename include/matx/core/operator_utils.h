@@ -156,12 +156,14 @@ namespace matx {
     template <typename Op>
     __MATX_HOST__ __MATX_INLINE__ VecWidth GetOpWidth(const Op &op) {
       if constexpr(has_matx_width<Op>()) {
+        printf("is op\n");
         return op.GetMaxWidth();
       }
       else if constexpr (!is_matx_op<Op>()) {
         return MAX_VECWIDTH_VAL;
       }
       else {
+        printf("ONE\n");
         return VecWidth::ONE;
       }
     }
@@ -182,5 +184,6 @@ printf("MaxCompatibleWidth: %d %d\n", (int)in1, (int)in2);
 
     //   return cuda::std::apply(apply_op, idx);
     // }
+
   }
 }; 

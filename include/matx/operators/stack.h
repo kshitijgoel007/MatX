@@ -85,7 +85,7 @@ namespace matx
         }
       }
 
-      template <int I = 0, int N>
+      template <VecWidth InWidth, VecWidth OutWidth, int I, int N>
       __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto GetVal(index_t oidx, cuda::std::array<index_t,RANK> &indices) const {
 
         if constexpr ( I == N ) {
@@ -94,31 +94,37 @@ namespace matx
         } else {
           if ( I < oidx ) {
             // this is not the correct operator, recurse
-            return GetVal<I+1, N>(oidx, indices);
+            return GetVal<InWidth, OutWidth, I+1, N>(oidx, indices);
           } else {
             // this is the correct operator, return it's value
             auto &op = cuda::std::get<I>(ops_);
-            return cuda::std::apply(op, indices);
+            return cuda::std::apply([&](auto &&...args)  {
+                return op.template operator()<InWidth, OutWidth>(args...);
+              }, indices);
           }
         }
       }
 
-      template <int I = 0, int N>
+      template <VecWidth InWidth, VecWidth OutWidth, int I, int N>
       __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto& GetVal(index_t oidx, cuda::std::array<index_t,RANK> &indices) {
 
         if constexpr ( I == N ) {
           // This should never happen
           auto &op = cuda::std::get<I-1>(ops_);
-          return cuda::std::apply(op, indices);
+          return cuda::std::apply([&](auto &&...args)  {
+              return op.template operator()<InWidth, OutWidth>(args...);
+            }, indices);
 
         } else {
           if ( I < oidx ) {
             // this is not the correct operator, recurse
-            return GetVal<I+1, N>(oidx, indices);
+            return GetVal<InWidth, OutWidth, I+1, N>(oidx, indices);
           } else {
             // this is the correct operator, return it's value
             auto &op = cuda::std::get<I>(ops_);
-            return cuda::std::apply(op, indices);
+            return cuda::std::apply([&](auto &&...args)  {
+                return op.template operator()<InWidth, OutWidth>(args...);
+              }, indices);
           }
         }
       }
@@ -141,13 +147,25 @@ namespace matx
           indices_o[i] = indices[i+1];
         }
 
-        return GetVal<0, sizeof...(Ts)>(oidx, indices_o);
+        return GetVal<InWidth, OutWidth, 0, sizeof...(Ts)>(oidx, indices_o);
       }
 
       template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
       __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
       {
-        return std::as_const(*this).template operator()(indices...);
+        return std::as_const(*this).template operator()<InWidth, OutWidth>(indices...);
+      }
+
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+      {
+        return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+      }
+
+      template <typename... Is>
+      __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+      {
+        return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
       }
 
       static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank() noexcept

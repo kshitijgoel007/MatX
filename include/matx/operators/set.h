@@ -109,32 +109,45 @@ public:
   template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
   __MATX_DEVICE__ __MATX_HOST__ inline decltype(auto) operator()(Is... indices) const noexcept
   {
-    if constexpr (is_matx_half_v<T> &&
-                  std::is_integral_v<decltype(detail::get_value<InWidth, OutWidth>(op_, indices...))>) {
-      out_.template operator()<InWidth, OutWidth>(indices...) = static_cast<float>(detail::get_value<InWidth, OutWidth>(op_, indices...));
-    }
-    else {
+    // if constexpr (is_matx_half_v<T> &&
+    //               std::is_integral_v<decltype(detail::get_value<InWidth, OutWidth>(op_, indices...))>) {
+    //   out_.template operator()<InWidth, OutWidth>(indices...) = static_cast<float>(detail::get_value<InWidth, OutWidth>(op_, indices...));
+    // }
+    // else {
       out_.template operator()<InWidth, OutWidth>(indices...) = detail::get_value<InWidth, OutWidth>(op_, indices...);
-    }
+
+      // cuda::std::array blah{indices...};
+
+      //     auto val = detail::get_value<InWidth, OutWidth>(op_, indices...);
+      //     auto val2=out_.template operator()<InWidth, OutWidth>(indices...);
+      //   printf("set %lld %lld width=%d, size(%lld %lld %lld %lld) %f %f %f %f %p\n", blah[0], blah[1], (int)InWidth, out_.Size(0), out_.Size(1), out_.Stride(0), out_.Stride(1), val.data[0].real(), val.data[0].imag(), val2.data[0].real(), val2.data[0].imag(), &out_.template operator()<InWidth, OutWidth>(indices...));      
+
+    //}
 
     return out_.template operator()<InWidth, OutWidth>(indices...);
   }
+
+  template <typename... Is>
+  __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+  {
+    return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+  }  
 
   // Workaround for nvcc bug. It won't allow the dual if constexpr branch workaround inside of lambda
   // functions, so we have to make a separate one.
   template <VecWidth InWidth, VecWidth OutWidth, typename... Ts>
   __MATX_DEVICE__ __MATX_HOST__ inline auto _internal_mapply(Ts&&... args) const noexcept {
-    if constexpr (is_matx_half_v<T> &&
-                  std::is_integral_v<decltype(detail::get_value<InWidth, OutWidth>(op_, args...))>) {
-      auto r = static_cast<float>(detail::get_value<InWidth, OutWidth>(op_, args...));
-      out_.template operator()<InWidth, OutWidth>(args...) = r;
-      return r;
-    }
-    else {
+    // if constexpr (is_matx_half_v<T> &&
+    //               std::is_integral_v<decltype(detail::get_value<InWidth, OutWidth>(op_, args...))>) {
+    //   auto r = static_cast<float>(detail::get_value<InWidth, OutWidth>(op_, args...));
+    //   out_.template operator()<InWidth, OutWidth>(args...) = r;
+    //   return r;
+    // }
+    // else {
       auto r = detail::get_value<InWidth, OutWidth>(op_, args...);
       out_.template operator()<InWidth, OutWidth>(args...) = r;
       return r;
-    }
+    //}
   }
 
   template <VecWidth InWidth, VecWidth OutWidth>

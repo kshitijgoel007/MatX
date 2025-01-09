@@ -102,13 +102,27 @@ namespace matx
             idx /= op_.Size(i);
           }
 
-          return cuda::std::apply(op_, ninds);
+          return cuda::std::apply([&](auto &&...args)  {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+            }, ninds);
         }
 
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
         {
-          return std::as_const(*this).template operator()(indices...);
+          return std::as_const(*this).template operator()<InWidth, OutWidth>(indices...);
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
+
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
         }
 
         constexpr __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ index_t Size(int32_t dim) const

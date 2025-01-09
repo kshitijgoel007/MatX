@@ -293,6 +293,7 @@ IGNORE_WARNING_PUSH_GCC("-Wmaybe-uninitialized")
 IGNORE_WARNING_POP_GCC
   }
 
+
   /**
    * @brief Return strides contaienr of descriptor
    * 

@@ -93,10 +93,13 @@ namespace matx
             ind /= op_.Size(d);
           }
 
-          auto apply_op = [this](auto... args) {
+          return cuda::std::apply([&](auto &&...args)  {
               return this->op_.template operator()<InWidth, OutWidth>(args...);
-          };
-          return cuda::std::apply(apply_op, out);
+            }, out);
+          // auto apply_op = [this](auto... args) {
+          //     return this->op_.template operator()<InWidth, OutWidth>(args...);
+          // };
+          // return cuda::std::apply(apply_op, out);
           //return cuda::std::apply(op_, out);
         }
 
@@ -232,11 +235,8 @@ namespace matx
           }
         }
 
-<<<<<<< HEAD
-        template <typename... Is>
-=======
+
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
->>>>>>> 1e06d595 (Start of vactor loads)
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const 
         {
           // indices coming in
@@ -258,41 +258,29 @@ namespace matx
             ind /= op_.Size(d);
           }
 
-          return cuda::std::apply(op_, out);
+          auto apply_op = [this](auto... args) {
+              return this->op_.template operator()<InWidth, OutWidth>(args...);
+          };
+          return cuda::std::apply(apply_op, out);
         }    
 
-<<<<<<< HEAD
-        template <typename... Is>
-        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
-        {
-          return std::as_const(*this).template operator()(indices...);
-        }   
-=======
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
         {
-          // indices coming in
-          cuda::std::array<index_t, Rank()> in{indices...};  // index coming in
-          cuda::std::array<index_t, T1::Rank()> out;         // index going out
+          return std::as_const(*this).template operator()<InWidth, OutWidth>(indices...);
+        }
 
-#pragma unroll
-          for(int i = 0 ; i < Rank() - 1; i++) {
-            // copy all but last index into out array
-            out[i] = in[i];
-          }
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
+        {
+          return (*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }
 
-          // expand last index into DIM indices
-          auto ind = in[Rank() - 1];
-#pragma unroll
-          for(int i = 0; i < DIM; i++) {
-            int d = T1::Rank() - 1 - i;
-            out[d] = ind % op_.Size(d);
-            ind /= op_.Size(d);
-          }
-
-          return cuda::std::apply(op_, out);
-        }    
->>>>>>> 1e06d595 (Start of vactor loads)
+        template <typename... Is>
+        __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices)
+        {
+          return std::as_const(*this).template operator()<VecWidth::SCALAR, VecWidth::SCALAR>(indices...);
+        }   
 
         static __MATX_INLINE__ constexpr __MATX_HOST__ __MATX_DEVICE__ int32_t Rank()
         {
