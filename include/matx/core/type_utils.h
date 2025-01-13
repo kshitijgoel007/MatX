@@ -791,9 +791,10 @@ template <typename T, typename = void> struct extract_value_type_impl {
 };
 
 template <typename T>
-struct extract_value_type_impl<T, typename std::enable_if_t<is_matx_op<T>()>> {
+struct extract_value_type_impl<T, typename std::enable_if_t<is_matx_op<T>() || is_vector_v<T>>> {
   using value_type = typename T::value_type;
 };
+
 }
 
 /**

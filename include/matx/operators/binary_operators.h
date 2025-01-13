@@ -128,7 +128,7 @@ namespace matx
         auto i1 = get_value<InWidth, OutWidth>(in1_, indices...);
         auto i2 = get_value<InWidth, OutWidth>(in2_, indices...);
 
-        return op_.template operator()<InWidth, OutWidth>(i1, i2);
+        return op_.template operator()<InWidth>(i1, i2);
       }
 
       template <typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>

@@ -69,7 +69,7 @@ namespace matx
             const auto res = cuda::std::apply([&](auto &&...args)  {
                 return this->op_.template operator()<InWidth, OutWidth>(args...);
               }, tup);
-            return _internal_conj(res);
+            return internal_conj(res);
           }
 
           return cuda::std::apply([&](auto &&...args)  {

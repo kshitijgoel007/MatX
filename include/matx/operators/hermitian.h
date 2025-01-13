@@ -68,7 +68,7 @@ namespace matx
           auto stl = cuda::std::get<Rank()-2>(tup);
           cuda::std::get<Rank()-2>(tup) = cuda::std::get<Rank()-1>(tup);
           cuda::std::get<Rank()-1>(tup) = stl;      
-          return conj(cuda::std::apply([&](auto &&...args)  {
+          return internal_conj(cuda::std::apply([&](auto &&...args)  {
               return this->op_.template operator()<InWidth, OutWidth>(args...);
             }, tup));
         }

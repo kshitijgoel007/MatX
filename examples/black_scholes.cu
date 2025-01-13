@@ -125,19 +125,20 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
   cudaStream_t stream;
   cudaStreamCreate(&stream);
   cudaExecutor exec{stream};
-// {
-//   auto a = make_tensor<double>({4, 8});
-//   auto b = make_tensor<double>({4, 8});
-//   a.SetVals({{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8}});
-//   b.SetVals({{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8},{1, 2, 3, 4, 5, 6, 7, 8}});
-//   print(a);
-//   print(b);
-//   auto c = make_tensor<double>({4,8});
-//   (c = b + a).run(exec);
-//     print(c);
+{
+  using complex = cuda::std::complex<double>;
+  auto a = make_tensor<complex>({2,2});
+  auto b = make_tensor<complex>({2,2});
+  a.SetVals({{{1,2},{2,3}}, {{1,2},{2,3}}});
+  b.SetVals({{{1,-2},{2,-3}}, {{-1,2},{2,-3}}});
+  print(a);
+  print(b);
+  auto c = make_tensor<complex>({2,2});
+  (c = conj(a)).run();
+    print(c);
 
-//     exit(0);
-// }
+    exit(0);
+}
 
   compute_black_scholes_matx(K_tensor, S_tensor, V_tensor, r_tensor, T_tensor, output_tensor, exec);  
 printf("done with matx one %p %p %p %p\n", K_tensor.Data(), S_tensor.Data(), V_tensor.Data(), output_tensor.Data());

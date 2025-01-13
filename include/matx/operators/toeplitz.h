@@ -180,7 +180,7 @@ namespace matx
     const auto op = detail::to_array(c);
     const auto op2 = op;
     if constexpr (is_complex_v<T>) {
-      cuda::std::transform(op2.begin(), op2.end(), [](T val){ return _internal_conj(val); } );
+      cuda::std::transform(op2.begin(), op2.end(), [](T val){ return conj(val); } );
     }
     return detail::TopelitzOp(op, op2);
   };

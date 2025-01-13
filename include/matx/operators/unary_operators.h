@@ -38,8 +38,7 @@
 #include "matx/operators/base_operator.h"
 
 #define DEFINE_UNARY_OP(FUNCTION, TENSOR_OP)                        \
-  template <typename I1,                                            \
-            typename = typename std::enable_if_t<is_matx_op<I1>()>> \
+  template <typename I1, std::enable_if_t<is_matx_op<I1>(), bool> = true> \
   [[nodiscard]] __MATX_INLINE__ auto FUNCTION(const I1 &i1)                         \
   {                                                                 \
     using I1Type = extract_value_type_t<I1>;                       \
@@ -101,7 +100,7 @@ namespace matx
     __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(Is... indices) const
     {
       auto i1 = get_value<InWidth, OutWidth>(in1_, indices...);
-      return op_.template operator()<InWidth, OutWidth>(i1);
+      return op_.template operator()<InWidth>(i1);
     }
 
     template <typename... Is, std::enable_if_t<std::conjunction_v<std::is_integral<Is>...>, bool> = true>
@@ -386,7 +385,7 @@ namespace matx
 
 #else
   DEFINE_UNARY_OP(sqrt, detail::SqrtOp);
-  DEFINE_UNARY_OP(csqrt, detail::CsqrtOp);
+  DEFINE_UNARY_OP(csqrt, detail::CSqrtOp);
   DEFINE_UNARY_OP(rsqrt, detail::RSqrtOp);
   DEFINE_UNARY_OP(exp, detail::ExpOp);
   DEFINE_UNARY_OP(expj, detail::ExpjOp);
@@ -398,19 +397,19 @@ namespace matx
   DEFINE_UNARY_OP(conj, detail::ConjOp);
 #else
   // implementing without a macro so we can optimize conj(real)
-  template <typename I1,                        
-            typename = typename std::enable_if_t<is_matx_op<I1>() || is_vector_v<I1>>> 
-  [[nodiscard]] __MATX_INLINE__ auto conj(I1 i1) {
-    using I1Type = extract_value_type_t<I1>;
-    if constexpr (is_complex_v<I1Type>) {
-      using Op = detail::ConjOp<I1Type>;
-      const typename detail::base_type_t<I1> &base = i1;
-      return detail::matxUnaryOp(base, Op());
-    } else {
-      // real type conj is a no-op so return original op.
-      return i1;
-    }
-  }
+  // template <typename I1,                        
+  //           typename = typename std::enable_if_t<is_matx_op<I1>() || is_vector_v<I1>>> 
+  // [[nodiscard]] __MATX_INLINE__ auto conj(I1 i1) {
+  //   using I1Type = extract_value_type_t<I1>;
+  //   if constexpr (is_complex_v<I1Type>) {
+  //     using Op = detail::ConjOp<I1Type>;
+  //     const typename detail::base_type_t<I1> &base = i1;
+  //     return detail::matxUnaryOp(base, Op());
+  //   } else {
+  //     // real type conj is a no-op so return original op.
+  //     return i1;
+  //   }
+  // }
 #endif
   DEFINE_UNARY_OP(abs, detail::AbsOp);
   DEFINE_UNARY_OP(abs2, detail::Abs2Op);

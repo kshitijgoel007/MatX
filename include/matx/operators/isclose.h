@@ -64,8 +64,8 @@ namespace matx
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ int operator()([[maybe_unused]] Is... indices) const 
         {
 
-          return static_cast<int>(detail::_internal_abs(op1_(indices...) - op2_(indices...)) <= 
-              static_cast<inner_type>(atol_) + static_cast<inner_type>(rtol_) * detail::_internal_abs(op2_(indices...)));
+          return static_cast<int>(abs(op1_(indices...) - op2_(indices...)) <= 
+              static_cast<inner_type>(atol_) + static_cast<inner_type>(rtol_) * abs(op2_(indices...)));
         }
 
         template <typename... Is>
