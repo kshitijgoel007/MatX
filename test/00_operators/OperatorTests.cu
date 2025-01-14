@@ -513,7 +513,7 @@ TYPED_TEST(OperatorTestsFloatNonComplexAllExecs, FMod)
   (tov0 = fmod(tiv0, tiv1)).run(exec);
   // example-end fmod-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_fmod((TestType)5.0, (TestType)3.1)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_fmod((TestType)5.0, (TestType)3.1)));
 
   MATX_EXIT_HANDLER();
 }
@@ -535,73 +535,73 @@ TYPED_TEST(OperatorTestsFloatAllExecs, TrigFuncs)
   (tov0 = sin(tiv0)).run(exec);
   // example-end sin-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_sin(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_sin(c)));
 
   // example-begin cos-test-1
   (tov0 = cos(tiv0)).run(exec);
   // example-end cos-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_cos(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_cos(c)));
 
   // example-begin tan-test-1
   (tov0 = tan(tiv0)).run(exec);
   // example-end tan-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_tan(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_tan(c)));
 
   // example-begin asin-test-1
   (tov0 = asin(tiv0)).run(exec);
   // example-end asin-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_asin(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_asin(c)));
 
   // example-begin acos-test-1
   (tov0 = acos(tiv0)).run(exec);
   // example-end acos-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_acos(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_acos(c)));
 
   // example-begin atan-test-1
   (tov0 = atan(tiv0)).run(exec);
   // example-end atan-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_atan(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_atan(c)));
 
   // example-begin sinh-test-1
   (tov0 = sinh(tiv0)).run(exec);
   // example-end sinh-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_sinh(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_sinh(c)));
 
   // example-begin cosh-test-1
   (tov0 = cosh(tiv0)).run(exec);
   // example-end cosh-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_cosh(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_cosh(c)));
 
   // example-begin tanh-test-1
   (tov0 = tanh(tiv0)).run(exec);
   // example-end tanh-test-1  
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_tanh(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_tanh(c)));
 
   // example-begin asinh-test-1
   (tov0 = asinh(tiv0)).run(exec);
   // example-end asinh-test-1  
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_asinh(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_asinh(c)));
 
   // example-begin acosh-test-1
   (tov0 = acosh(tiv0)).run(exec);
   // example-end acosh-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_acosh(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_acosh(c)));
 
   // example-begin atanh-test-1
   (tov0 = atanh(tiv0)).run(exec);
   // example-end atanh-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_atanh(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_atanh(c)));
 
   MATX_EXIT_HANDLER();
 }
@@ -624,7 +624,7 @@ TYPED_TEST(OperatorTestsComplexTypesAllExecs, AngleOp)
   (tov0 = angle(tiv0)).run(exec);
   // example-end angle-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_angle(c)));  
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_angle(c)));  
 
   MATX_EXIT_HANDLER();
 }
@@ -1881,7 +1881,7 @@ TYPED_TEST(OperatorTestsFloatNonComplexAllExecs, OperatorFuncsR2C)
 
   EXPECT_TRUE(MatXUtils::MatXTypeCompare(
       tov0(),
-      typename detail::complex_from_scalar_t<TestType>(detail::_internal_cos(tiv0()), detail::_internal_sin(tiv0()))));  
+      typename detail::complex_from_scalar_t<TestType>(detail::internal_cos(tiv0()), detail::internal_sin(tiv0()))));  
   MATX_EXIT_HANDLER();      
 }
 
@@ -1903,49 +1903,49 @@ TYPED_TEST(OperatorTestsFloatNonComplexAllExecs, OperatorFuncs)
   (tov0 = log10(tiv0)).run(exec);
   // example-end log10-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_log10(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_log10(c)));
 
   // example-begin log-test-1
   (tov0 = log(tiv0)).run(exec);
   // example-end log-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_log(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_log(c)));
 
   // example-begin log2-test-1
   (tov0 = log2(tiv0)).run(exec);
   // example-end log2-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_log2(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_log2(c)));
 
   // example-begin floor-test-1
   (tov0 = floor(tiv0)).run(exec);
   // example-end floor-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_floor(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_floor(c)));
 
   // example-begin ceil-test-1
   (tov0 = ceil(tiv0)).run(exec);
   // example-end ceil-test-1  
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_ceil(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_ceil(c)));
 
   // example-begin round-test-1
   (tov0 = round(tiv0)).run(exec);
   // example-end round-test-1  
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_round(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_round(c)));
 
   // example-begin sqrt-test-1
   (tov0 = sqrt(tiv0)).run(exec);
   // example-end sqrt-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_sqrt(c)));      
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_sqrt(c)));      
 
   // example-begin rsqrt-test-1
   (tov0 = rsqrt(tiv0)).run(exec);
   // example-end rsqrt-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_rsqrt(c)));   
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_rsqrt(c)));   
 
   MATX_EXIT_HANDLER();
 }
@@ -2160,7 +2160,7 @@ TYPED_TEST(OperatorTestsNumericAllExecs, OperatorFuncs)
   (tov0 = as_type<TestType>(pow(tiv0, p))).run(exec);
   // example-end pow-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_pow(c, p)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_pow(c, p)));
 
   TestType three = 3.0f;
 
@@ -2312,13 +2312,13 @@ TYPED_TEST(OperatorTestsComplexTypesAllExecs, OperatorFuncs)
   (tov0 = exp(tiv0)).run(exec);
   // example-end exp-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_exp(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_exp(c)));
 
   // example-begin conj-test-1
   (tov0 = conj(tiv0)).run(exec);
   // example-end conj-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::_internal_conj(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tov0(), detail::internal_conj(c)));
 
   // abs takes a complex and output a floating point value
   auto tdd0 = make_tensor<typename TestType::value_type>({});
@@ -2327,7 +2327,7 @@ TYPED_TEST(OperatorTestsComplexTypesAllExecs, OperatorFuncs)
   (tdd0 = abs(tiv0)).run(exec);
   // example-end abs-test-1
   exec.sync();
-  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tdd0(), detail::_internal_abs(c)));
+  EXPECT_TRUE(MatXUtils::MatXTypeCompare(tdd0(), detail::internal_abs(c)));
 
   MATX_EXIT_HANDLER();
 }
@@ -4427,7 +4427,7 @@ template<class TypeParam>
 TypeParam legendre_check(int n, int m, TypeParam x) {
 	if (m > n ) return 0;
 
-	TypeParam a = detail::_internal_sqrt(TypeParam(1)-x*x);
+	TypeParam a = detail::internal_sqrt(TypeParam(1)-x*x);
 	// first we will move move along diagonal
 
 	// initialize registers

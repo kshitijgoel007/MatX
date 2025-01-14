@@ -48,6 +48,7 @@ namespace matx
     template<class Op1, class Op2>
       class CommaOp : public BaseOp<CommaOp<Op1, Op2>>{
         public:
+          using matx_width = bool;
 
           __MATX_HOST__ __MATX_INLINE__  CommaOp(const Op1 &op1, const Op2 &op2) : op1_(op1), op2_(op2) {
             MATX_STATIC_ASSERT_STR(Op1::Rank() == Op2::Rank(), matxInvalidSize, 
@@ -59,12 +60,16 @@ namespace matx
             }
           }
 
+          __MATX_INLINE__ VecWidth GetMaxWidth() const {
+            return MaxCompatibleWidth(op1_, op2_);
+          }                
+
 	        __MATX_INLINE__ std::string str() const { return op1_.str() + ", " + op2_.str(); }
 
           template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
           auto __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ operator()(Is... indices) const {
-            op1_(indices...);
-            return op2_(indices...);
+            get_value<InWidth, OutWidth>(op1_, indices...);
+            return get_value<InWidth, OutWidth>(op2_, indices...);
           }
 
           template <typename... Is>

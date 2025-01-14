@@ -91,6 +91,7 @@ namespace matx
       public:
         using matxop = bool;
         using value_type = typename T3::value_type;
+        using matx_width = bool; ///< Signal we can do vector types from this operator
 
         __MATX_INLINE__ std::string str() const { return "legendre(" + get_type_str(n_) + "," + get_type_str(m_) + "," + get_type_str(in_) + ")"; }
 
@@ -98,6 +99,10 @@ namespace matx
           static_assert(get_rank<T1>() <= 1, "legendre op:  n must be a scalar, rank 0 or 1 operator");
           static_assert(get_rank<T2>() <= 1, "legendre op:  m must be a scalar, rank 0 or 1 operator");
         }
+
+        VecWidth GetMaxWidth() const {
+          return MaxCompatibleWidth(MaxCompatibleWidth(n_, m_), in_);
+        }        
 
         template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
         __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ value_type operator()(Is... indices) const 

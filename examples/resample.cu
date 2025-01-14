@@ -71,8 +71,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
   // Slice
   auto sliceView = slice(sigViewComplex, {0}, {nyq});
 
-  // Inverse Transform - FFT size based on output
-  (resampView = ifft(sliceView)).run(exec);
+  // Inverse Transform - FFT size zero-padded to match output size
+  (resampView = ifft(sliceView, resampView.Size(0))).run(exec);
 
   cudaEventRecord(start, stream);
 
@@ -83,8 +83,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
     // Slice
     auto sv = slice(sigViewComplex, {0}, {nyq});
 
-    // Inverse Transform - FFT size based on output
-    (resampView = ifft(sv)).run(exec);
+    // Inverse Transform - FFT size zero-padded to match output size
+    (resampView = ifft(sv, resampView.Size(0))).run(exec);
   }
 
   cudaEventRecord(stop, stream);

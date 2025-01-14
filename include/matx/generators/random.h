@@ -367,7 +367,7 @@ namespace detail {
        * @param indices Index values
        */
       template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
-      __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ T operator()([[maybe_unused]] Is... indices) const
+      __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ decltype(auto) operator()([[maybe_unused]] Is... indices) const
       {
         T val;
 #ifdef __CUDA_ARCH__
@@ -470,7 +470,8 @@ namespace detail {
         }
 #endif
 
-        auto vec_val = detail::Vector<T, static_cast<size_t>(InWidth)>{static_cast<std::remove_cv_t<T>>(val)};
+        auto vec_val = detail::Vector<T, static_cast<size_t>(InWidth)>{};
+        vec_val.Fill(static_cast<std::remove_cv_t<T>>(val));
         return vec_val;
       }
 

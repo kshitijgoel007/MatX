@@ -52,10 +52,15 @@ namespace matx
 
       public:
         using matxop = bool;
+        using matx_width = bool;
         using value_type = typename T1::value_type;
 
         __MATX_INLINE__ std::string str() const { return "sph2cart(" + get_type_str(theta_) + 
           "," + get_type_str(phi_) + "," + get_type_str(r_) + ")"; }
+
+        VecWidth GetMaxWidth() const {
+          return MaxCompatibleWidth(MaxCompatibleWidth(theta_, phi_), r_);
+        }          
 
         __MATX_INLINE__ Sph2CartOp(const T1 &theta, const T2 &phi, const T3 &r) : theta_(theta), phi_(phi), r_(r)
         {
@@ -72,11 +77,21 @@ namespace matx
           auto r = get_value<InWidth, OutWidth>(r_, indices...);
 
           if constexpr (WHICH==0) { // X
-            return r * _internal_cos(phi) * _internal_cos(theta);
+            const auto phi_cos   = internal_cos<decltype(phi), InWidth>(phi);
+            const auto theta_cos = internal_cos<decltype(theta), InWidth>(theta);
+            const auto r_mul_phi = internal_mul<decltype(r), decltype(phi), InWidth>(r, phi_cos);
+            const auto p_mul_theta = internal_mul<decltype(r_mul_phi), decltype(theta_cos), InWidth>(r_mul_phi, theta_cos);
+            return p_mul_theta;
           } else if constexpr (WHICH==1) { // Y
-            return r * _internal_cos(phi) * _internal_sin(theta);
+            const auto phi_cos   = internal_cos<decltype(phi), InWidth>(phi);
+            const auto theta_sin = internal_sin<decltype(theta), InWidth>(theta);
+            const auto r_mul_phi = internal_mul<decltype(r), decltype(phi_cos), InWidth>(r, phi_cos);
+            const auto p_mul_theta = internal_mul<decltype(r_mul_phi), decltype(theta_sin), InWidth>(r_mul_phi, theta_sin);
+            return p_mul_theta;
           } else {  // Z
-            return r * _internal_sin(phi);
+            const auto phi_sin   = internal_sin<decltype(phi), InWidth>(phi);
+            const auto r_mul_phi = internal_mul<decltype(r), decltype(phi_sin), InWidth>(r, phi_sin);
+            return r_mul_phi;
           }
         }
 

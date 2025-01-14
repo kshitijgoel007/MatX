@@ -53,9 +53,14 @@ namespace matx
 
       template <VecWidth InWidth, VecWidth OutWidth, typename... Is>
       __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ auto operator()(Is...) const { 
-        auto v = detail::Vector<T, static_cast<size_t>(InWidth)>{};
-        v.Fill(static_cast<std::remove_cv_t<T>>(v_));
-        return v; 
+        if constexpr (InWidth == VecWidth::SCALAR) {
+          return v_;
+        }
+        else {
+          auto v = detail::Vector<T, static_cast<size_t>(InWidth)>{};
+          v.Fill(static_cast<std::remove_cv_t<T>>(v_));
+          return v; 
+        }
       }
 
       template <typename... Is>

@@ -46,7 +46,7 @@ namespace detail {
 // constexpr if
 #define MATX_UNARY_OP_GEN(FUNC, OPNAME)                                        \
   template <typename T> \
-  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T v1) { \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_##FUNC(T v1) { \
     if constexpr (is_matx_type_v<T>) {    \
       return FUNC(v1); \
     } \
@@ -54,29 +54,48 @@ namespace detail {
       return cuda::std::FUNC(v1);    \
     } \
   } \
+  template <typename T, matx::detail::VecWidth InWidth = matx::detail::VecWidth::SCALAR> \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T v1) { \
+    if constexpr (is_vector_v<T>) {    \
+      return UnaryVecFunc<InWidth>(scalar_internal_##FUNC<typename T::value_type>, v1); \
+    } \
+    else { \
+      return scalar_internal_##FUNC(v1);    \
+    } \
+  } \
   template <typename T> struct OPNAME##Op {                                     \
     static __MATX_INLINE__ std::string str(const std::string &in) { return std::string(#FUNC) + "(" + in + ")"; }                 \
     template <matx::detail::VecWidth InWidth, typename T1V> \
-    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(const T1V &v1) const { \
+    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(T1V v1) const { \
       return UnaryVecFunc<InWidth>(internal_##FUNC<T>, v1); \
     } \
-    using value_type = std::invoke_result_t<decltype(internal_##FUNC<T>), T>; \
+    using value_type = std::invoke_result_t<decltype(scalar_internal_##FUNC<T>), T>; \
   };
 
 // Unary operator with a custom function
 #define MATX_UNARY_OP_GEN_NOFUNC(FUNC, OPNAME)                                        \
+  template <typename T, matx::detail::VecWidth InWidth = matx::detail::VecWidth::SCALAR> \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T v1) { \
+    if constexpr (is_vector_v<T>) {    \
+      return UnaryVecFunc<InWidth>(scalar_internal_##FUNC<typename T::value_type>, v1); \
+    } \
+    else { \
+      return scalar_internal_##FUNC(v1);    \
+    } \
+  } \
   template <typename T> struct OPNAME##Op {                                     \
     static __MATX_INLINE__ std::string str(const std::string &in) { return std::string(#FUNC) + "(" + in + ")"; }                 \
     template <matx::detail::VecWidth InWidth, typename T1V> \
-    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(const T1V &v1) const { \
+    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(T1V v1) const { \
       return UnaryVecFunc<InWidth>(internal_##FUNC<T>, v1); \
     } \
-    using value_type = std::invoke_result_t<decltype(internal_##FUNC<T>), T>; \
+    using value_type = std::invoke_result_t<decltype(scalar_internal_##FUNC<T>), T>; \
   };  
 
+// Standard binary function
 #define MATX_BINARY_OP_GEN(FUNC, OPNAME)                                       \
   template <typename T1, typename T2> \
-  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T1 v1, T2 v2) { \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_##FUNC(T1 v1, T2 v2) { \
     if constexpr (is_matx_type_v<T1> || is_matx_type_v<T2>) {    \
       return FUNC(v1, v2); \
     } \
@@ -84,19 +103,37 @@ namespace detail {
       cuda::std::FUNC(v1, v2);    \
     } \
   } \
+  template <typename T1, typename T2, matx::detail::VecWidth InWidth = matx::detail::VecWidth::SCALAR> \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T1 v1, T2 v2) { \
+    if constexpr (is_vector_v<T1> || is_vector_v<T2>) {    \
+      return BinVecFunc<InWidth>(scalar_internal_##FUNC<typename T1::value_type, typename T2::value_type>, v1, v2); \
+    } \
+    else { \
+      return scalar_internal_##FUNC(v1, v2);    \
+    } \
+  } \
   template <typename T1, typename T2> struct OPNAME##Op {                                     \
     static __MATX_INLINE__ std::string str(const std::string &in1, const std::string &in2) { return std::string(#FUNC) + "(" + in1 + "," + in2 + ")"; } \
     template <matx::detail::VecWidth InWidth, typename T1V, typename T2V> \
-    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(const T1V &v1, const T2V &v2) const { \
+    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(T1V v1, T2V v2) const { \
       return BinVecFunc<InWidth>(internal_##FUNC<T1, T2>, v1, v2); \
     } \
-    using value_type = std::invoke_result_t<decltype(internal_##FUNC<T1, T2>), T1, T2>; \
+    using value_type = std::invoke_result_t<decltype(scalar_internal_##FUNC<T1, T2>), T1, T2>; \
   };
   
 #define MATX_BINARY_OP_GEN_OPERATOR(FUNC, OPNAME, OPSYM)                                       \
   template <typename T1, typename T2> \
-  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T1 v1, T2 v2) { \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_##FUNC(T1 v1, T2 v2) { \
     return v1 OPSYM v2; \
+  } \
+  template <typename T1, typename T2, matx::detail::VecWidth InWidth = matx::detail::VecWidth::SCALAR> \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T1 v1, T2 v2) { \
+    if constexpr (is_vector_v<T1> || is_vector_v<T2>) {    \
+      return BinVecFunc<InWidth>(scalar_internal_##FUNC<typename T1::value_type, typename T2::value_type>, v1, v2); \
+    } \
+    else { \
+      return scalar_internal_##FUNC(v1, v2);    \
+    } \
   } \
   template <typename T1, typename T2> struct OPNAME##Op {                   \
     static __MATX_INLINE__ std::string str(const std::string &in1, const std::string &in2) { return std::string(#FUNC) + "(" + in1 + "," + in2 + ")"; } \
@@ -104,18 +141,27 @@ namespace detail {
     __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(const T1V &v1, const T2V &v2) const { \
       return BinVecFunc<InWidth>(internal_##FUNC<T1, T2>, v1, v2); \
     } \
-    using value_type = std::invoke_result_t<decltype(internal_##FUNC<T1, T2>), T1, T2>; \
+    using value_type = std::invoke_result_t<decltype(scalar_internal_##FUNC<T1, T2>), T1, T2>; \
   };
 
 // Binary operator with a custom function
 #define MATX_BINARY_OP_NOFUNC(FUNC, OPNAME)                                       \
+  template <typename T1, typename T2, matx::detail::VecWidth InWidth = matx::detail::VecWidth::SCALAR> \
+  static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_##FUNC(T1 v1, T2 v2) { \
+    if constexpr (is_vector_v<T1> || is_vector_v<T2>) {    \
+      return BinVecFunc<InWidth>(scalar_internal_##FUNC<typename T1::value_type, typename T2::value_type>, v1, v2); \
+    } \
+    else { \
+      return scalar_internal_##FUNC(v1, v2);    \
+    } \
+  } \
   template <typename T1, typename T2> struct OPNAME##Op {                                     \
     static __MATX_INLINE__ std::string str(const std::string &in1, const std::string &in2) { return std::string(#FUNC) + "(" + in1 + "," + in2 + ")"; } \
     template <matx::detail::VecWidth InWidth, typename T1V, typename T2V> \
-    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(const T1V &v1, const T2V &v2) const { \
+    __MATX_INLINE__ __MATX_DEVICE__ __MATX_HOST__ decltype(auto) operator()(T1V v1, T2V v2) const { \
       return BinVecFunc<InWidth>(internal_##FUNC<T1, T2>, v1, v2); \
     } \
-    using value_type = std::invoke_result_t<decltype(internal_##FUNC<T1, T2>), T1, T2>; \
+    using value_type = std::invoke_result_t<decltype(scalar_internal_##FUNC<T1, T2>), T1, T2>; \
   };  
 
 
@@ -277,7 +323,7 @@ MATX_UNARY_OP_GEN(atanh, Atanh);
 
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_rsqrt(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_rsqrt(T v1) {
   if constexpr (is_matx_type_v<T>){
     return rsqrt(v1);
   }
@@ -292,14 +338,14 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_rsqrt(T v1) {
 MATX_UNARY_OP_GEN_NOFUNC(rsqrt, RSqrt);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_csqrt(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_csqrt(T v1) {
   return sqrt(static_cast<cuda::std::complex<T>>(v1));
 }
 MATX_UNARY_OP_GEN_NOFUNC(csqrt, CSqrt);
 
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_conj(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_conj(T v1) {
   if constexpr (is_cuda_complex_v<T>) {
     return cuda::std::conj(v1);
   }
@@ -310,7 +356,7 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_conj(T v1) {
 MATX_UNARY_OP_GEN_NOFUNC(conj, Conj);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_sin(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_sin(T v1) {
   if constexpr (is_matx_type_v<T>) {
     return matx::sin(v1);
   }
@@ -322,7 +368,7 @@ MATX_UNARY_OP_GEN_NOFUNC(sin, Sin);
 
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_cos(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_cos(T v1) {
   if constexpr (is_matx_type_v<T>) {
     return matx::cos(v1);
   }
@@ -333,19 +379,19 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_cos(T v1) {
 MATX_UNARY_OP_GEN_NOFUNC(cos, Cos);
 
 template <typename T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_expj(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_expj(T v1) {
   if constexpr (is_matx_type_v<T>) {
-    return matxHalfComplex<T>{_internal_cos(v1), _internal_sin(v1)};
+    return matxHalfComplex<T>{scalar_internal_cos(v1), scalar_internal_sin(v1)};
   }
   else {
-    return cuda::std::complex<T>{_internal_cos(v1), _internal_sin(v1)};
+    return cuda::std::complex<T>{scalar_internal_cos(v1), scalar_internal_sin(v1)};
   }  
 }
 MATX_UNARY_OP_GEN_NOFUNC(expj, Expj);
 
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_abs2(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_abs2(T v1) {
   if constexpr (is_complex_v<T>) {
     return v1.real() * v1.real() + v1.imag() * v1.imag();
   }
@@ -356,27 +402,27 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_abs2(T v1) {
 MATX_UNARY_OP_GEN_NOFUNC(abs2, Abs2);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_normcdf(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_normcdf(T v1) {
   return normcdf(v1);
 }
 MATX_UNARY_OP_GEN_NOFUNC(normcdf, NormCdf);
 
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_real(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_real(T v1) {
   return v1.real();
 }
 MATX_UNARY_OP_GEN_NOFUNC(real, Real);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_imag(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_imag(T v1) {
   return v1.imag();
 }
 MATX_UNARY_OP_GEN_NOFUNC(imag, Imag);
 
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_angle(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_angle(T v1) {
   if constexpr (is_cuda_complex_v<T>) {
     return cuda::std::atan2(v1.imag(), v1.real());
   }
@@ -387,19 +433,19 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_angle(T v1) {
 MATX_UNARY_OP_GEN_NOFUNC(angle, Angle);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_subneg(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_subneg(T v1) {
   return -v1;
 }
 MATX_UNARY_OP_GEN_NOFUNC(subneg, SubNeg);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_not(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_not(T v1) {
   return !v1;
 }
 MATX_UNARY_OP_GEN_NOFUNC(not, Not);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_isnan(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_isnan(T v1) {
   using conversionType = typename matx::detail::value_promote_t<T>;
   if constexpr(!std::is_floating_point_v<conversionType>) {
       return false;
@@ -415,7 +461,7 @@ static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_isnan(T v1) {
 MATX_UNARY_OP_GEN_NOFUNC(isnan, IsNan);
 
 template <typename T>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_isinf(T v1) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_isinf(T v1) {
   using conversionType = typename matx::detail::value_promote_t<T>;
   if constexpr(!std::is_floating_point_v<conversionType>) {
     return false;
@@ -439,13 +485,13 @@ MATX_BINARY_OP_GEN_OPERATOR(div, Div, /);
 MATX_BINARY_OP_GEN_OPERATOR(mod, Mod, %);
 
 template <typename T1, typename T2>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_fmod(T1 v1, T2 v2) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_fmod(T1 v1, T2 v2) {
   return cuda::std::fmod(v1, v2);
 }  
 MATX_BINARY_OP_NOFUNC(fmod, FMod);
 
 template <typename T1, typename T2>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_atan2(T1 v1, T2 v2) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_atan2(T1 v1, T2 v2) {
   if constexpr (is_matx_half_v<T1> || is_matx_half_v<T2>) {
     return atan2(v1, v2);
   }
@@ -458,13 +504,13 @@ MATX_BINARY_OP_NOFUNC(atan2, Atan2);
 MATX_BINARY_OP_GEN(pow, Pow);
 
 template <typename T1, typename T2>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_max(T1 v1, T2 v2) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_max(T1 v1, T2 v2) {
   return cuda::std::max(v1, v2);
 }  
 MATX_BINARY_OP_NOFUNC(max, Maximum);
 
 template <typename T1, typename T2>
-static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto internal_min(T1 v1, T2 v2) {
+static __MATX_INLINE__ __MATX_HOST__ __MATX_DEVICE__ auto scalar_internal_min(T1 v1, T2 v2) {
   return cuda::std::min(v1, v2);
 }  
 MATX_BINARY_OP_NOFUNC(min, Minimum);
