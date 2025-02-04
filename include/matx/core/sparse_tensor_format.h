@@ -155,7 +155,7 @@ public:
       return "d" + std::to_string(di) + " mod " + std::to_string(cj);
     }
     else {
-      return "unknown";
+      return "invalid";
     }
   }
 };
@@ -182,6 +182,9 @@ public:
       return "compressed";
     } else if constexpr (ltype == LvlType::CompressedNonUnique) {
       return "compressed(non-unique)";
+    }
+    else {
+      return "invalid";
     }
   }
 };
