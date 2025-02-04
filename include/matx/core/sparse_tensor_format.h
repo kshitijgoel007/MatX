@@ -154,6 +154,9 @@ public:
     } else if constexpr (op == LvlOp::Mod) {
       return "d" + std::to_string(di) + " mod " + std::to_string(cj);
     }
+    else {
+      return "unknown";
+    }
   }
 };
 
